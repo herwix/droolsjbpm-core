@@ -1,3 +1,15 @@
+import com.iterranux.droolsjbpmCore.api.RuntimeManagerType
+import com.iterranux.droolsjbpmCore.runtime.manager.api.RuntimeManagerFactory
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
+import org.drools.core.base.MapGlobalResolver
+import org.drools.core.marshalling.impl.ClassObjectMarshallingStrategyAcceptor
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
+
 class DroolsjbpmCoreGrailsPlugin {
     // the plugin version
     def version = "0.1"
@@ -8,12 +20,14 @@ class DroolsjbpmCoreGrailsPlugin {
             "grails-app/views/error.gsp"
     ]
 
+    def dependsOn = ['platformCore' : '* > 1.0.RC5']
+
     // TODO Fill in these fields
     def title = "Droolsjbpm Core Plugin" // Headline display name of the plugin
-    def author = "Your name"
+    def author = "Alexander Herwix"
     def authorEmail = ""
     def description = '''\
-Brief summary/description of the plugin.
+Integrates the droolsjbpm project with Grails and works as the foundation for Droolsjbpm based Grails-plugins.
 '''
 
     // URL to the plugin's documentation
@@ -40,8 +54,88 @@ Brief summary/description of the plugin.
         // TODO Implement additions to web.xml (optional), this event occurs before
     }
 
+    /**
+     *   Platform - Core enabled configuration API
+     *   http://grailsrocks.github.io/grails-platform-core/guide/configuration.html
+     */
+    def doWithConfigOptions = {
+        'hibernateNamingStrategy.table.prefix'(type: String, defaultValue: 'DROOLSJBPM_')
+        'entityManagerFactory.jpaProperties'(type: Properties, defaultValue: jpaProperties)
+        'entityManagerFactory.datasource.beanName'(type: String, defaultValue: 'dataSourceUnproxied')
+        'runtimeManager.singleton.identifier.location'(type: String, defaultValue: null)
+        'runtimeManager.defaultImplementation'(type:String, defaultValue: PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE)
+
+    }
+
+    def doWithConfig = { config ->
+
+        //Merge packages list
+        def beanPackagesList = ['com.iterranux.droolsjbpmCore']
+        if(config.grails.spring.bean.packages){
+            beanPackagesList.addAll(config.grails.spring.bean.packages)
+        }
+
+        application {
+            //enable spring annotations for these packages
+            grails.spring.bean.packages = beanPackagesList
+        }
+    }
+
     def doWithSpring = {
-        // TODO Implement runtime spring config (optional)
+
+        xmlns kie:"http://drools.org/schema/kie-spring"
+
+        def pluginConfig = application.config.plugin.droolsjbpmCore
+
+        droolsjbpmEntityManagerFactory(LocalContainerEntityManagerFactoryBean){
+            jpaVendorAdapter = { HibernateJpaVendorAdapter a ->
+            }
+
+            packagesToScan = [
+                    'org.drools.persistence',
+                    'org.jbpm.persistence',
+                    'org.jbpm.runtime.manager.impl.jpa',
+                    'org.jbpm.services.task.impl.model',
+                    'org.jbpm.process.audit'
+            ]
+
+            mappingResources = ['META-INF/JBPMorm.xml','META-INF/Taskorm.xml']
+            persistenceUnitName = 'org.jbpm.persistence.jpa'
+
+            jtaDataSource = ref(pluginConfig.entityManagerFactory.datasource.beanName)
+
+            jpaProperties = pluginConfig.entityManagerFactory.jpaProperties
+        }
+
+        /**
+         *  Need to set up beans manually because annotation driven config doesn't work
+         *  http://jira.grails.org/browse/GRAILS-10365
+         */
+        runtimeManagerFactory(GenericRuntimeManagerFactory)
+        //Create the factory beans to be used in the genericRuntimeManagerFactory
+        singletonRuntimeManagerFactory(SingletonRuntimeManagerFactory)
+        perProcessInstanceRuntimeManagerFactory(PerProcessInstanceRuntimeManagerFactory)
+        perRequestRuntimeManagerFactory(PerRequestRuntimeManagerFactory)
+
+        droolsjbpmGlobals(MapGlobalResolver)
+
+        dacceptor(ClassObjectMarshallingStrategyAcceptor,['*.*'])
+
+        kie.kstore(id:'kiestore')
+
+        kie.environment(id: 'droolsjbpmEnvironment'){
+            kie.'entity-manager-factory'(ref:'droolsjbpmEntityManagerFactory')
+
+            kie.globals(ref:'droolsjbpmGlobals')
+
+            kie.'object-marshalling-strategies'(){
+                kie.'jpa-placeholder-resolver-strategy'()
+                kie.'serializable-placeholder-resolver-strategy'('strategy-acceptor-ref':"dacceptor")
+            }
+
+
+        }
+
     }
 
     def doWithDynamicMethods = { ctx ->
@@ -49,7 +143,12 @@ Brief summary/description of the plugin.
     }
 
     def doWithApplicationContext = { ctx ->
-        // TODO Implement post initialization spring config (optional)
+
+        def pluginConfig = ctx.grailsApplication.config.plugin.droolsjbpmCore
+
+        //TODO Can't access application in doWithConfigOptions
+        System.setProperty('jbpm.data.dir', pluginConfig.runtimeManager.singleton.identifier.location ?: ctx.getResource('/droolsjbpm/data').file.toString())
+
     }
 
     def onChange = { event ->
@@ -65,5 +164,32 @@ Brief summary/description of the plugin.
 
     def onShutdown = { event ->
         // TODO Implement code that is executed when the application shuts down (optional)
+    }
+
+    /**
+     * Default hibernate jpa properties for entityManagerFactory configured for H2 and Atomikos Transactions:
+     *
+     * hibernate.ejb.naming_strategy                : 'com.iterranux.droolsjbpmCore.persistence.DroolsjbpmNamingStrategy'
+     * hibernate.max_fetch_depth                    : 3
+     * hibernate.hbm2ddl.auto                       : 'update'
+     * hibernate.show_sql                           : false
+     * hibernate.dialect                            : 'org.hibernate.dialect.H2Dialect'
+     * hibernate.transaction.manager_lookup_class   : 'com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup'
+     *
+     * @return jpaProperties
+     */
+    private static Properties getJpaProperties(){
+
+        //hibernate properties from persistence.xml
+        Properties props = new Properties()
+        props.put('hibernate.ejb.naming_strategy','com.iterranux.droolsjbpmCore.persistence.DroolsjbpmNamingStrategy')
+        props.put('hibernate.max_fetch_depth',3)
+        props.put('hibernate.hbm2ddl.auto','update')
+        props.put('hibernate.show_sql',false)
+        props.put('hibernate.dialect','org.hibernate.dialect.H2Dialect')
+        //jta manager lookup
+        props.put('hibernate.transaction.manager_lookup_class', 'com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup')
+
+        return props
     }
 }

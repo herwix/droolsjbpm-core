@@ -30,18 +30,58 @@ grails.project.dependency.resolution = {
         mavenCentral()
         // uncomment the below to enable remote dependency resolution
         // from public Maven repositories
+
+        mavenRepo "https://repository.jboss.org/nexus/content/groups/public/"
         //mavenRepo "http://repository.codehaus.org"
         //mavenRepo "http://download.java.net/maven/2/"
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
     dependencies {
-        // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
-        // runtime 'mysql:mysql-connector-java:5.1.24'
+        def droolsVersion = '6.0.0.CR3'
+
+        runtime "org.jbpm:jbpm-bpmn2:${droolsVersion}"
+        runtime "org.jbpm:jbpm-flow:${droolsVersion}"
+
+        runtime("org.jbpm:jbpm-runtime-manager:${droolsVersion}") {
+            excludes    'org.jboss.weld:weld-core:1.1.13.Final',
+                        'org.jboss.seam.transaction:seam-transaction:3.1.0.Final',
+                        'javax.enterprise:cdi-api:1.0-SP4'
+
+        }
+        runtime "org.jbpm:jbpm-persistence-jpa:${droolsVersion}"
+        runtime("org.kie:kie-spring:${droolsVersion}") {
+            excludes    'org.springframework:spring-core:3.0.6.RELEASE',
+                        'org.springframework:spring-beans:3.0.6.RELEASE',
+                        'org.springframework:spring-context:3.0.6.RELEASE',
+                        'org.jboss.seam.spring:seam-spring-core:3.1.0.Final',
+                        'javax.enterprise:cdi-api:1.0-SP4',
+                        'org.jboss.weld.se:weld-se-core:1.1.13.Final'
+        }
+        /**
+         * use dependency org.kie.kie-ci to use embedded maven for remote discovery
+         * (find kieModules in local maven repo)
+         *
+         * use KieScanner to automatically update dependency graphs from maven.
+         */
+
+        runtime('org.springframework:spring-test:3.2.4.RELEASE') {
+            excludes 'org.springframework:spring-core:3.2.4.RELEASE'
+        }
+
     }
 
     plugins {
         build(":release:3.0.0",
-              ":rest-client-builder:1.0.3") {
+              ":rest-client-builder:1.0.3",
+              ":tomcat:7.0.41") {
+            export = false
+        }
+
+        compile(':platform-core:1.0.RC5', ":atomikos:1.1"){
+            export = false
+        }
+
+        runtime(":hibernate:3.6.10.M5"){
             export = false
         }
     }

@@ -17,6 +17,15 @@ environments {
         dataSource {
             dbCreate = "create-drop" // one of 'create', 'create-drop', 'update', 'validate', ''
             url = "jdbc:h2:mem:devDb;MVCC=TRUE;LOCK_TIMEOUT=10000"
+            xaConfig = [
+                    driverClassName: 'org.h2.jdbcx.JdbcDataSource',
+                    driverProperties: [
+                            URL: 'jdbc:h2:mem:devDb;MVCC=TRUE;LOCK_TIMEOUT=10000',
+                            user: 'sa',
+                            password: ''],
+                    minPoolSize: 1,
+                    maxPoolSize: 50
+            ]
         }
     }
     test {
