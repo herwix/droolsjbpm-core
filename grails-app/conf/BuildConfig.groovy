@@ -54,7 +54,7 @@ grails.project.dependency.resolution = {
                         'org.springframework:spring-beans:3.0.6.RELEASE',
                         'org.springframework:spring-context:3.0.6.RELEASE',
                         'org.jboss.seam.spring:seam-spring-core:3.1.0.Final',
-                        'javax.enterprise:cdi-api:1.0-SP4',
+                        //'javax.enterprise:cdi-api:1.0-SP4',
                         'org.jboss.weld.se:weld-se-core:1.1.13.Final'
         }
         /**

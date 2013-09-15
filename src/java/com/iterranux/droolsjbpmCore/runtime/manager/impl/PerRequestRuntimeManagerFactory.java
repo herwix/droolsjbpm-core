@@ -18,4 +18,9 @@ public class PerRequestRuntimeManagerFactory implements RuntimeManagerFactory {
     public RuntimeManager newRuntimeManager(RuntimeEnvironment environment, SessionFactory factory, TaskServiceFactory taskServiceFactory, String identifier) {
         return new PerRequestRuntimeManager(environment, factory, taskServiceFactory, identifier);
     }
+
+    @Override
+    public String getManufacturableTypeName() {
+        return RUNTIME_MANAGER_TYPE;
+    }
 }

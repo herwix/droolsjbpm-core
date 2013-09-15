@@ -17,4 +17,9 @@ public class PerProcessInstanceRuntimeManagerFactory implements RuntimeManagerFa
     public RuntimeManager newRuntimeManager(RuntimeEnvironment environment, SessionFactory factory, TaskServiceFactory taskServiceFactory, String identifier) {
         return new PerProcessInstanceRuntimeManager(environment, factory, taskServiceFactory, identifier);
     }
+
+    @Override
+    public String getManufacturableTypeName() {
+        return RUNTIME_MANAGER_TYPE;
+    }
 }

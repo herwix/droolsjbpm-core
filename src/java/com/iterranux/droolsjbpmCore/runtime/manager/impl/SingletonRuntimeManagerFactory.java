@@ -18,4 +18,9 @@ public class SingletonRuntimeManagerFactory extends SingletonRuntimeManager impl
     public RuntimeManager newRuntimeManager(RuntimeEnvironment environment, SessionFactory factory, TaskServiceFactory taskServiceFactory, String identifier) {
         return new SingletonRuntimeManager(environment, factory, taskServiceFactory, identifier);
     }
+
+    @Override
+    public String getManufacturableTypeName() {
+        return RUNTIME_MANAGER_TYPE;
+    }
 }

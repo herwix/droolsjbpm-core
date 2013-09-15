@@ -1,6 +1,5 @@
 package com.iterranux.droolsjbpmCore.internal;
 
-import grails.util.Holders;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
@@ -16,17 +15,22 @@ import java.util.*;
  *
  * @param <T>
  */
-public abstract class AbstractFactory<T> implements ApplicationContextAware {
+public abstract class AbstractFactory<T extends AbstractFactoryManufacturable> implements ApplicationContextAware {
 
-    private ApplicationContext applicationContext;
+    protected ApplicationContext applicationContext;
 
     protected Map<String, T> manufacturableBeans;
 
     @PostConstruct
+    @SuppressWarnings("unchecked")
     public void init(){
-        setManufacturableBeans(applicationContext.getBeansOfType(getManufacturableClass()));
-    }
+        Map<String, T> beanMap = new HashMap<String, T>();
 
+        for(T bean : (Collection<T>) applicationContext.getBeansOfType(getManufacturableClass()).values() ){
+            beanMap.put(bean.getManufacturableTypeName(),bean);
+        }
+        setManufacturableBeans(beanMap);
+    }
 
     public void setApplicationContext(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
@@ -93,6 +97,7 @@ public abstract class AbstractFactory<T> implements ApplicationContextAware {
      * @param childClass the child class
      * @return a list of the raw classes for the actual type arguments.
      */
+    @SuppressWarnings("all")
     public static <T> List<Class<?>> getTypeArguments(Class<T> baseClass, Class<? extends T> childClass) {
 
         Map<Type, Type> resolvedTypes = new HashMap<Type, Type>();
@@ -105,6 +110,7 @@ public abstract class AbstractFactory<T> implements ApplicationContextAware {
             }
             else {
                 ParameterizedType parameterizedType = (ParameterizedType) type;
+
                 Class<?> rawType = (Class) parameterizedType.getRawType();
 
                 Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();

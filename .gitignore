@@ -21,3 +21,6 @@ stacktrace.log
 *.ipr
 *.iws
 .idea/
+
+#### drools ####
+*.ser

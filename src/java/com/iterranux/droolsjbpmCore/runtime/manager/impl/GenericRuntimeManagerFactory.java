@@ -19,12 +19,30 @@ import org.kie.internal.runtime.manager.SessionFactory;
 import org.kie.internal.runtime.manager.TaskServiceFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *  Generic RuntimeManagerFactory that can execute any RuntimeManagerFactory that was injected via Spring.
  *  Allows for easy addition of new RuntimeManagers via plugins.
  */
-@Component
 public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManagerFactory> {
+
+    private TaskServiceFactory taskServiceFactory;
+
+    private RuntimeEnvironment defaultRuntimeEnvironment;
+
+    public RuntimeManager newRuntimeManager(String runtimeManagerType){
+
+        return newRuntimeManager(runtimeManagerType, defaultRuntimeEnvironment, "default-"+runtimeManagerType);
+    }
+
+    public RuntimeManager newRuntimeManager(String runtimeManagerType, String identifier){
+
+        return newRuntimeManager(runtimeManagerType, defaultRuntimeEnvironment, identifier);
+    }
 
     public RuntimeManager newRuntimeManager(String runtimeManagerType, RuntimeEnvironment environment){
 
@@ -36,7 +54,6 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
         RuntimeManagerFactory runtimeManagerFactory = manufacturableBeans.get(runtimeManagerType);
 
         SessionFactory factory = getSessionFactory(environment);
-        TaskServiceFactory taskServiceFactory = getTaskServiceFactory(environment);
 
         RuntimeManager manager = runtimeManagerFactory.newRuntimeManager( environment, factory, taskServiceFactory, identifier);
 
@@ -57,12 +74,6 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
         return factory;
     }
 
-    protected TaskServiceFactory getTaskServiceFactory(RuntimeEnvironment environment) {
-        TaskServiceFactory taskServiceFactory = new LocalTaskServiceFactory(environment);
-
-        return taskServiceFactory;
-    }
-
     protected void initTimerService(RuntimeEnvironment environment, RuntimeManager manager) {
         if (environment instanceof SchedulerProvider) {
             GlobalSchedulerService schedulerService = ((SchedulerProvider) environment).getSchedulerService();
@@ -75,5 +86,13 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
                         "new org.jbpm.process.core.timer.impl.RegisteredTimerServiceDelegate(\""+timerServiceId+"\")");
             }
         }
+    }
+
+    public void setTaskServiceFactory(TaskServiceFactory taskServiceFactory) {
+        this.taskServiceFactory = taskServiceFactory;
+    }
+
+    public void setDefaultRuntimeEnvironment(RuntimeEnvironment defaultRuntimeEnvironment) {
+        this.defaultRuntimeEnvironment = defaultRuntimeEnvironment;
     }
 }
