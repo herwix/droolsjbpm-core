@@ -1,3 +1,4 @@
+import com.iterranux.droolsjbpmCore.internal.TransactionManagerJNDIRegistrator
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.DefaultRuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
@@ -6,6 +7,7 @@ import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManager
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
 import org.drools.core.base.MapGlobalResolver
 import org.drools.core.marshalling.impl.ClassObjectMarshallingStrategyAcceptor
+import org.jbpm.runtime.manager.impl.PerProcessInstanceRuntimeManager
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
 import org.springframework.mock.jndi.SimpleNamingContextBuilder
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
@@ -84,11 +86,13 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         'jbpm.data.dir'(type: String, defaultValue: null)
 
 
-        'runtimeManager.defaultImplementation'(type:String, defaultValue: PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE)
+        'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
 
-        'transactionManager.useAtomikos'(type:Boolean, defaultValue: true)
+        'transactionManager.registerToJNDI'(type:Boolean, defaultValue: true)
+        'transactionManager.beanName'(type: String, defaultValue: 'atomikosTransactionManager')
         'transactionManager.jndi.lookup'(type: String, defaultValue: 'java:comp/TransactionManager')
         'transactionManager.userTransaction.jndi.lookup'(type: String, defaultValue: 'java:comp/UserTransaction')
+        'transactionManager.userTransaction.beanName'(type: String, defaultValue: 'atomikosUserTransaction')
     }
 
     def doWithConfig = { config ->
@@ -110,6 +114,24 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         xmlns kie:"http://drools.org/schema/kie-spring"
 
         def pluginConfig = application.config.plugin.droolsjbpmCore
+
+        /**
+         * Set up Transaction Manager
+         */
+        System.setProperty('jbpm.ut.jndi.lookup', pluginConfig.transactionManager.userTransaction.jndi.lookup.toString())
+        System.setProperty('jbpm.tm.jndi.lookup', pluginConfig.transactionManager.jndi.lookup.toString())
+
+        if(pluginConfig.transactionManager.registerToJNDI){
+
+            droolsjbpmTransactionManagerJNDIRegistrator(TransactionManagerJNDIRegistrator){
+
+                transactionManager = ref(pluginConfig.transactionManager.beanName.toString())
+                transactionManagerLookup = pluginConfig.transactionManager.jndi.lookup.toString()
+
+                userTransaction = ref(pluginConfig.transactionManager.userTransaction.beanName.toString())
+                userTransactionLookup = pluginConfig.transactionManager.userTransaction.jndi.lookup.toString()
+            }
+        }
 
         /**
          * Persistence via EntityManagerFactory
@@ -141,7 +163,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         /**
          * Set up the generic runtimeManagerFactory
          */
-        runtimeManagerFactory(GenericRuntimeManagerFactory){
+        droolsjbpmRuntimeManagerFactory(GenericRuntimeManagerFactory){
             taskServiceFactory = ref('droolsjbpmTaskServiceFactory')
             defaultRuntimeEnvironment = ref('droolsjbpmDefaultRuntimeEnvironment')
         }
@@ -155,6 +177,48 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
             userGroupCallback = ref('droolsjbpmTestUserGroupCallback')
         }
+
+        /**
+         * Set up default runtimeManagers. They are lazy init so they are only initialized if needed.
+         */
+        if(pluginConfig.runtimeManager.default.registerWithSpring){
+
+            perProcessInstanceRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
+                    PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+                    'droolsjbpmCore-'+PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
+
+                bean.lazyInit = true
+
+                //wait for JNDI registration if needed
+                if(pluginConfig.transactionManager.registerToJNDI){
+                    bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
+                }
+            }
+            singletonRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
+                    SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+                    'droolsjbpmCore-'+SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
+
+                bean.lazyInit = true
+
+                //wait for JNDI registration if needed
+                if(pluginConfig.transactionManager.registerToJNDI){
+                    bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
+                }
+            }
+            perRequestRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
+                    PerRequestRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+                    'droolsjbpmCore-'+PerRequestRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
+
+                bean.lazyInit = true
+
+                //wait for JNDI registration if needed
+                if(pluginConfig.transactionManager.registerToJNDI){
+                    bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
+                }
+            }
+
+        }
+
         /**
          *  Create the factory beans to be used in the genericRuntimeManagerFactory
          *
@@ -162,9 +226,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          *  http://jira.grails.org/browse/GRAILS-10365
          *  TODO: Remove when bug is resolved
          */
-        singletonRuntimeManagerFactory(SingletonRuntimeManagerFactory)
-        perProcessInstanceRuntimeManagerFactory(PerProcessInstanceRuntimeManagerFactory)
-        perRequestRuntimeManagerFactory(PerRequestRuntimeManagerFactory)
+        droolsjbpmSingletonRuntimeManagerFactory(SingletonRuntimeManagerFactory)
+        droolsjbpmPerProcessInstanceRuntimeManagerFactory(PerProcessInstanceRuntimeManagerFactory)
+        droolsjbpmPerRequestRuntimeManagerFactory(PerRequestRuntimeManagerFactory)
 
 
         /**
@@ -200,19 +264,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         def pluginConfig = ctx.grailsApplication.config.plugin.droolsjbpmCore
 
         System.setProperty('jbpm.data.dir', pluginConfig.jbpm.data.dir ?: ctx.getResource('/droolsjbpm/data').file.toString())
-        System.setProperty('jbpm.ut.jndi.lookup', pluginConfig.transactionManager.userTransaction.jndi.lookup.toString())
-        System.setProperty('jbpm.tm.jndi.lookup', pluginConfig.transactionManager.jndi.lookup.toString())
 
-        if(pluginConfig.transactionManager.useAtomikos){
-            log.debug("Registering Atomikos TX to JNDI.")
-            SimpleNamingContextBuilder.emptyActivatedContextBuilder()
-            Context context = new InitialContext()
-
-            context.bind(pluginConfig.transactionManager.userTransaction.jndi.lookup.toString(), ctx.atomikosUserTransaction)
-            context.bind(pluginConfig.transactionManager.jndi.lookup.toString(), ctx.atomikosTransactionManager)
-        }else{
-            log.debug("Skipping Atomikos TX JNDI registration.")
-        }
     }
 
     def onChange = { event ->
