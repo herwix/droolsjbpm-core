@@ -186,6 +186,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                     'droolsjbpmCore-'+PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
 
                 bean.lazyInit = true
+                bean.destroyMethod = "close"
 
                 //wait for JNDI registration if needed
                 if(pluginConfig.transactionManager.registerToJNDI){
@@ -201,6 +202,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                     'droolsjbpmCore-'+SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
 
                 bean.lazyInit = true
+                bean.destroyMethod = "close"
 
                 //wait for JNDI registration if needed
                 if(pluginConfig.transactionManager.registerToJNDI){
@@ -216,6 +218,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                     'droolsjbpmCore-'+PerRequestRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
 
                 bean.lazyInit = true
+                bean.destroyMethod = "close"
 
                 //wait for JNDI registration if needed
                 if(pluginConfig.transactionManager.registerToJNDI){
