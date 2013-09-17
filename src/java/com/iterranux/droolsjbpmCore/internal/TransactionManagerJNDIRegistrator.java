@@ -12,6 +12,9 @@ import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
 
+/**
+ * Workaround to make standalone TransactionManagers accessible via JNDI.
+ */
 public class TransactionManagerJNDIRegistrator {
 
     private static final Log log = LogFactory.getLog(TransactionManagerJNDIRegistrator.class);

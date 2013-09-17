@@ -1,20 +1,19 @@
 import com.iterranux.droolsjbpmCore.internal.TransactionManagerJNDIRegistrator
-import com.iterranux.droolsjbpmCore.runtime.manager.impl.DefaultRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.RuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
+
 import org.drools.core.base.MapGlobalResolver
 import org.drools.core.marshalling.impl.ClassObjectMarshallingStrategyAcceptor
-import org.jbpm.runtime.manager.impl.PerProcessInstanceRuntimeManager
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
-import org.springframework.mock.jndi.SimpleNamingContextBuilder
+
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 
-import javax.naming.Context
-import javax.naming.InitialContext
+
 
 class DroolsjbpmCoreGrailsPlugin {
     // the plugin version
@@ -77,14 +76,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                                 'org.jbpm.process.audit' ])
         'entityManagerFactory.mappingResources'(type: List, defaultValue: [ 'META-INF/JBPMorm.xml','META-INF/Taskorm.xml' ])
 
-        /**
-         * Can't access applicationContext in doWithConfigOptions,
-         * so the default value 'web-app/droolsjbpm/data' is set
-         * when this is not set.
-         * TODO Find nicer workaround.
-         */
-        'jbpm.data.dir'(type: String, defaultValue: null)
-
+        'path.to.jbpm.data.dir'(type: String, defaultValue: realPathToApp+'/web-app/droolsjbpm/data')
+        'path.to.localResources.dir'(type: String, defaultValue: realPathToApp+'/web-app/droolsjbpm/resources')
 
         'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
 
@@ -114,6 +107,11 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         xmlns kie:"http://drools.org/schema/kie-spring"
 
         def pluginConfig = application.config.plugin.droolsjbpmCore
+
+        /**
+         * Set System Properties for convenience
+         */
+        System.setProperty('jbpm.data.dir', pluginConfig.path.to.jbpm.data.dir);
 
         /**
          * Set up Transaction Manager
@@ -165,26 +163,30 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          */
         droolsjbpmRuntimeManagerFactory(GenericRuntimeManagerFactory){
             taskServiceFactory = ref('droolsjbpmTaskServiceFactory')
-            defaultRuntimeEnvironment = ref('droolsjbpmDefaultRuntimeEnvironment')
         }
 
         /**
-         * Set up the default runtimeEnvironment
-         *
-         * TODO: Inject Classpath kbase and register listeners, etc.
+         * Set up the default runtimeEnvironmentFactory
          */
-        droolsjbpmDefaultRuntimeEnvironment(DefaultRuntimeEnvironmentFactory){
+        droolsjbpmRuntimeEnvironmentFactory(RuntimeEnvironmentFactory){
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
             userGroupCallback = ref('droolsjbpmTestUserGroupCallback')
         }
+
+        droolsjbpmLocalResourcesRuntimeEnvironment(droolsjbpmRuntimeEnvironmentFactory: 'newLocalResourcesRuntimeEnvironment',
+                pluginConfig.path.to.localResources.dir)
 
         /**
          * Set up default runtimeManagers. They are lazy init so they are only initialized if needed.
          */
         if(pluginConfig.runtimeManager.default.registerWithSpring){
 
+            /**
+             *  Per Process Instance
+             */
             perProcessInstanceRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
                     PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+                    ref('droolsjbpmLocalResourcesRuntimeEnvironment'),
                     'droolsjbpmCore-'+PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
 
                 bean.lazyInit = true
@@ -194,8 +196,12 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                     bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
                 }
             }
+            /**
+             *  Singleton
+             */
             singletonRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
                     SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+                    ref('droolsjbpmLocalResourcesRuntimeEnvironment'),
                     'droolsjbpmCore-'+SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
 
                 bean.lazyInit = true
@@ -205,8 +211,12 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                     bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
                 }
             }
+            /**
+             *  Per Request
+             */
             perRequestRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
                     PerRequestRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+                    ref('droolsjbpmLocalResourcesRuntimeEnvironment'),
                     'droolsjbpmCore-'+PerRequestRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
 
                 bean.lazyInit = true
@@ -261,9 +271,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
     def doWithApplicationContext = { ctx ->
 
-        def pluginConfig = ctx.grailsApplication.config.plugin.droolsjbpmCore
-
-        System.setProperty('jbpm.data.dir', pluginConfig.jbpm.data.dir ?: ctx.getResource('/droolsjbpm/data').file.toString())
 
     }
 
@@ -317,4 +324,13 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         return props
     }
 
+    /**
+     * Ugly workaround to get the real path to the app.
+     *
+     * TODO: Confirm that this works when plugin is installed
+     * @return
+     */
+    private String getRealPathToApp(){
+        return getClass().getProtectionDomain().getCodeSource().getLocation().getFile().replace("/target/classes/", "")
+    }
 }

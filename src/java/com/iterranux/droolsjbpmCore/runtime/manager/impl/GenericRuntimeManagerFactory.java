@@ -32,23 +32,26 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
 
     private TaskServiceFactory taskServiceFactory;
 
-    private RuntimeEnvironment defaultRuntimeEnvironment;
-
-    public RuntimeManager newRuntimeManager(String runtimeManagerType){
-
-        return newRuntimeManager(runtimeManagerType, defaultRuntimeEnvironment, "default-"+runtimeManagerType);
-    }
-
-    public RuntimeManager newRuntimeManager(String runtimeManagerType, String identifier){
-
-        return newRuntimeManager(runtimeManagerType, defaultRuntimeEnvironment, identifier);
-    }
-
+    /**
+     * Creates a new RuntimeManager of the given Type for the supplied RuntimeEnvironment.
+     *
+     * @param runtimeManagerType The runtimeManagerType - accessibale via RuntimeManagerFactoryImpl.RUNTIME_MANAGER_TYPE
+     * @param environment The runtime environment - can be created via the RuntimeEnvironmentFactory
+     * @return runtimeManager
+     */
     public RuntimeManager newRuntimeManager(String runtimeManagerType, RuntimeEnvironment environment){
 
         return newRuntimeManager(runtimeManagerType, environment, "default-"+runtimeManagerType);
     }
 
+    /**
+     * Creates a new RuntimeManager of the given Type with that unique identifier for the supplied RuntimeEnvironment.
+     *
+     * @param runtimeManagerType The runtimeManagerType - accessibale via RuntimeManagerFactoryImpl.RUNTIME_MANAGER_TYPE
+     * @param environment The runtime environment - can be created via the RuntimeEnvironmentFactory
+     * @param identifier Unique identifier - Instantiation with a non unique identifier will lead to an exception.
+     * @return runtimeManager
+     */
     public RuntimeManager newRuntimeManager(String runtimeManagerType, RuntimeEnvironment environment, String identifier){
 
         RuntimeManagerFactory runtimeManagerFactory = manufacturableBeans.get(runtimeManagerType);
@@ -90,9 +93,5 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
 
     public void setTaskServiceFactory(TaskServiceFactory taskServiceFactory) {
         this.taskServiceFactory = taskServiceFactory;
-    }
-
-    public void setDefaultRuntimeEnvironment(RuntimeEnvironment defaultRuntimeEnvironment) {
-        this.defaultRuntimeEnvironment = defaultRuntimeEnvironment;
     }
 }
