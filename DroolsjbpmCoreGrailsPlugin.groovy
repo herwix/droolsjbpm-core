@@ -76,8 +76,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                                 'org.jbpm.process.audit' ])
         'entityManagerFactory.mappingResources'(type: List, defaultValue: [ 'META-INF/JBPMorm.xml','META-INF/Taskorm.xml' ])
 
-        'path.to.jbpm.data.dir'(type: String, defaultValue: realPathToApp+'/web-app/droolsjbpm/data')
-        'path.to.localResources.dir'(type: String, defaultValue: realPathToApp+'/web-app/droolsjbpm/resources')
+        //default value = web-app/droolsjbpm/data - can't be set here no servletContex.
+        'path.to.jbpm.data.dir'(type: String, defaultValue: null)
+        'path.to.localResources.dir'(type: String, defaultValue: 'web-app/droolsjbpm/resources')
 
         'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
 
@@ -107,11 +108,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         xmlns kie:"http://drools.org/schema/kie-spring"
 
         def pluginConfig = application.config.plugin.droolsjbpmCore
-
-        /**
-         * Set System Properties for convenience
-         */
-        System.setProperty('jbpm.data.dir', pluginConfig.path.to.jbpm.data.dir);
 
         /**
          * Set up Transaction Manager
@@ -271,6 +267,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
     def doWithApplicationContext = { ctx ->
 
+        def pluginConfig = ctx.grailsApplication.config.plugin.droolsjbpmCore
+        System.setProperty('jbpm.data.dir', pluginConfig.jbpm.data.dir ?: ctx.getResource('/droolsjbpm/data').file.toString())
 
     }
 
@@ -322,15 +320,5 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         props.put("john", "HR");
 
         return props
-    }
-
-    /**
-     * Ugly workaround to get the real path to the app.
-     *
-     * TODO: Confirm that this works when plugin is installed
-     * @return
-     */
-    private String getRealPathToApp(){
-        return getClass().getProtectionDomain().getCodeSource().getLocation().getFile().replace("/target/classes/", "")
     }
 }
