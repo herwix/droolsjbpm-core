@@ -5,9 +5,6 @@ import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRunti
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
-
-import org.drools.core.base.MapGlobalResolver
-import org.drools.core.marshalling.impl.ClassObjectMarshallingStrategyAcceptor
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
 
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
@@ -82,6 +79,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
 
+        'taskservice.userGroupCallback.disable'(type:Boolean, defaultValue: false)
+        'taskservice.userGroupCallback.userProperties'(type:Properties, defaultValue: getUserProperties())
+
         'transactionManager.registerToJNDI'(type:Boolean, defaultValue: true)
         'transactionManager.beanName'(type: String, defaultValue: 'atomikosTransactionManager')
         'transactionManager.jndi.lookup'(type: String, defaultValue: 'java:comp/TransactionManager')
@@ -145,14 +145,22 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         droolsjbpmJpaVendorAdapter(HibernateJpaVendorAdapter)
 
         /**
-         * Set up local task service factory
+         * Set up local task service factory (required to work with runtimeManager)
          */
         droolsjbpmTaskServiceFactory(SpringTaskServiceFactory){
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
-            userGroupCallback = ref('droolsjbpmTestUserGroupCallback')
+            userGroupCallback = ref('droolsjbpmUserGroupCallback')
         }
 
-        droolsjbpmTestUserGroupCallback(JBossUserGroupCallbackImpl,userGroups)
+
+        if(! pluginConfig.taskservice.userGroupCallback.disable){
+                /**
+                 * Set up a simple UserGroupCallback for test purposes backed by a Properties obj with format:
+                 * String Username : String Roles (comma seperated)
+                 */
+                droolsjbpmTestUserGroupCallback(JBossUserGroupCallbackImpl, (Properties) pluginConfig.taskservice.userGroupCallback.userProperties)
+                springConfig.addAlias('droolsjbpmUserGroupCallback','droolsjbpmTestUserGroupCallback')
+        }
 
         /**
          * Set up the generic runtimeManagerFactory
@@ -166,9 +174,12 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          */
         droolsjbpmRuntimeEnvironmentFactory(RuntimeEnvironmentFactory){
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
-            userGroupCallback = ref('droolsjbpmTestUserGroupCallback')
+            userGroupCallback = ref('droolsjbpmUserGroupCallback')
         }
 
+        /**
+         * Creates a RuntimeEnvironment with a kbase based on assets in the given directory.
+         */
         droolsjbpmLocalResourcesRuntimeEnvironment(droolsjbpmRuntimeEnvironmentFactory: 'newLocalResourcesRuntimeEnvironment',
                 pluginConfig.path.to.localResources.dir)
 
@@ -242,7 +253,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         /**
          * Drools Spring Integration, KStore and Environment set up.
-         */
+
         droolsjbpmGlobals(MapGlobalResolver)
 
         dacceptor(ClassObjectMarshallingStrategyAcceptor,['*.*'])
@@ -261,6 +272,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
 
         }
+
+         */
 
     }
 
@@ -317,11 +330,17 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         return props
     }
 
-    private static Properties getUserGroups(){
-        Properties props= new Properties();
-        props.put("mary", "HR");
-        props.put("john", "HR");
+    /**
+     * Simple test set of user properties.
+     *
+     * @return Properties (String username : String roles)
+     */
+    private static Properties getUserProperties(){
 
-        return props
+        Properties props = new Properties();
+        props.put("mary", "HR,IT");
+        props.put("john", "HR,IT");
+
+        return props;
     }
 }

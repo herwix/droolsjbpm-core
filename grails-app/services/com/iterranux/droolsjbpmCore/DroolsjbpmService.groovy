@@ -1,7 +1,6 @@
 package com.iterranux.droolsjbpmCore
 
-import com.iterranux.droolsjbpmCore.api.RuntimeManagerType
-import com.iterranux.droolsjbpmCore.api.RuntimeService
+
 import grails.transaction.Transactional
 import org.jbpm.process.instance.impl.demo.SystemOutWorkItemHandler
 import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder
@@ -21,7 +20,7 @@ import org.kie.internal.task.api.UserGroupCallback
 import javax.persistence.EntityManagerFactory
 
 @Transactional
-class DroolsjbpmService implements RuntimeService{
+class DroolsjbpmService {
 
     EntityManagerFactory droolsjbpmEntityManagerFactory
 
@@ -33,9 +32,7 @@ class DroolsjbpmService implements RuntimeService{
 
     }
 
-    RuntimeManager getRuntimeManager(RuntimeManagerType type, RuntimeEnvironment runtimeEnvironment, String identifier){
 
-    }
 
     ProcessInstance startProcess(String name){
 

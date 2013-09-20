@@ -77,7 +77,9 @@ grails.project.dependency.resolution = {
             export = false
         }
 
-        compile(':platform-core:1.0.RC5', ":atomikos:1.1"){
+        compile(':platform-core:1.0.RC5',
+                ":atomikos:1.1"
+        ){
             export = false
         }
 
