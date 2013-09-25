@@ -44,11 +44,27 @@ grails.project.dependency.resolution = {
 
         runtime("org.jbpm:jbpm-runtime-manager:${droolsVersion}") {
             excludes    'org.jboss.weld:weld-core:1.1.13.Final',
-                        'org.jboss.seam.transaction:seam-transaction:3.1.0.Final',
-                        'javax.enterprise:cdi-api:1.0-SP4'
+                        'org.jboss.seam.transaction:seam-transaction:3.1.0.Final'
 
         }
         runtime "org.jbpm:jbpm-persistence-jpa:${droolsVersion}"
+
+
+        /**
+         * use dependency org.kie.kie-ci to use embedded maven for remote discovery
+         * (find kieModules in local maven repo)
+         *
+         * use KieScanner to automatically update dependency graphs from maven.
+         */
+
+        //Workaround to use Mock JNDI registration in Dev mode.
+        if (Environment.current == Environment.DEVELOPMENT) {
+            runtime('org.springframework:spring-test:3.2.4.RELEASE') {
+                excludes 'org.springframework:spring-core:3.2.4.RELEASE'
+            }
+        }
+
+        /* Unnecessary at the moment
         runtime("org.kie:kie-spring:${droolsVersion}") {
             excludes    'org.springframework:spring-core:3.0.6.RELEASE',
                         'org.springframework:spring-beans:3.0.6.RELEASE',
@@ -57,17 +73,7 @@ grails.project.dependency.resolution = {
                         //'javax.enterprise:cdi-api:1.0-SP4',
                         'org.jboss.weld.se:weld-se-core:1.1.13.Final'
         }
-        /**
-         * use dependency org.kie.kie-ci to use embedded maven for remote discovery
-         * (find kieModules in local maven repo)
-         *
-         * use KieScanner to automatically update dependency graphs from maven.
-         */
-
-        runtime('org.springframework:spring-test:3.2.4.RELEASE') {
-            excludes 'org.springframework:spring-core:3.2.4.RELEASE'
-        }
-
+        */
     }
 
     plugins {

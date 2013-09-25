@@ -19,7 +19,8 @@ class DroolsjbpmCoreGrailsPlugin {
     def grailsVersion = "2.0 > *"
     // resources that are excluded from plugin packaging
     def pluginExcludes = [
-            "grails-app/views/error.gsp"
+            "grails-app/views/error.gsp",
+            "web-app/droolsjbpm/**"
     ]
 
     def dependsOn = ['platformCore' : '* > 1.0.RC5']
@@ -105,8 +106,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
     def doWithSpring = {
 
-        xmlns kie:"http://drools.org/schema/kie-spring"
-
         def pluginConfig = application.config.plugin.droolsjbpmCore
 
         /**
@@ -116,7 +115,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         System.setProperty('jbpm.tm.jndi.lookup', pluginConfig.transactionManager.jndi.lookup.toString())
 
         if(pluginConfig.transactionManager.registerToJNDI){
-
             droolsjbpmTransactionManagerJNDIRegistrator(TransactionManagerJNDIRegistrator){
 
                 transactionManager = ref(pluginConfig.transactionManager.beanName.toString())
@@ -253,6 +251,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         /**
          * Drools Spring Integration, KStore and Environment set up.
+         *
+
+        xmlns kie:"http://drools.org/schema/kie-spring"
 
         droolsjbpmGlobals(MapGlobalResolver)
 
@@ -338,8 +339,14 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
     private static Properties getUserProperties(){
 
         Properties props = new Properties();
-        props.put("mary", "HR,IT");
-        props.put("john", "HR,IT");
+        props.put('krisv','admin,manager,user')
+        props.put('john','admin,manager,user,PM')
+        props.put('mary','admin,manager,user,HR')
+        props.put('reviewer','user,PM')
+        props.put('translator','user,PM')
+        props.put('manager','manager,HR')
+        props.put('salaboy','admin,user')
+        props.put('Administrator','Administrators')
 
         return props;
     }
