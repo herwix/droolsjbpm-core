@@ -4,6 +4,7 @@
 .settings
 stacktrace.log
 /*.zip
+/*.zip.sha1
 /plugin.xml
 /*.log
 /*DB.*

@@ -6,5 +6,6 @@
 //
 // For example you can create directory under project tree:
 //
-//    ant.mkdir(dir:"${basedir}/grails-app/jobs")
-//
+
+ant.mkdir(dir:"${basedir}/web-app/droolsjbpm/resources")
+
