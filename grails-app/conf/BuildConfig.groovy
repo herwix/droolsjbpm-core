@@ -42,11 +42,7 @@ grails.project.dependency.resolution = {
         runtime "org.jbpm:jbpm-bpmn2:${droolsVersion}"
         runtime "org.jbpm:jbpm-flow:${droolsVersion}"
 
-        runtime("org.jbpm:jbpm-runtime-manager:${droolsVersion}") {
-            excludes    'org.jboss.weld:weld-core:1.1.13.Final',
-                        'org.jboss.seam.transaction:seam-transaction:3.1.0.Final'
-
-        }
+        runtime "org.jbpm:jbpm-runtime-manager:${droolsVersion}"
         runtime "org.jbpm:jbpm-persistence-jpa:${droolsVersion}"
 
 
