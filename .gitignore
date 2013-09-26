@@ -25,4 +25,4 @@ stacktrace.log
 
 #### drools ####
 *.ser
-/web-app/droolsjbpm/resources/
+/web-app/droolsjbpm/data
