@@ -14,7 +14,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 
 class DroolsjbpmCoreGrailsPlugin {
     // the plugin version
-    def version = "0.1"
+    def version = "1.0.RC1"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.0 > *"
     // resources that are excluded from plugin packaging
@@ -74,8 +74,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                                 'org.jbpm.process.audit' ])
         'entityManagerFactory.mappingResources'(type: List, defaultValue: [ 'META-INF/JBPMorm.xml','META-INF/Taskorm.xml' ])
 
-        //default value = web-app/droolsjbpm/data - can't be set here no servletContex.
-        'path.to.jbpm.data.dir'(type: String, defaultValue: null)
+        'path.to.jbpm.data.dir'(type: String, defaultValue: 'web-app/droolsjbpm/data')
         'path.to.localResources.dir'(type: String, defaultValue: 'web-app/droolsjbpm/resources')
 
         'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
@@ -107,6 +106,11 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
     def doWithSpring = {
 
         def pluginConfig = application.config.plugin.droolsjbpmCore
+
+        /**
+         * Set up jbpm data dir
+         */
+        System.setProperty('jbpm.data.dir', new File(pluginConfig.path.to.jbpm.data.dir.toString()).absolutePath)
 
         /**
          * Set up Transaction Manager
@@ -283,9 +287,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
     }
 
     def doWithApplicationContext = { ctx ->
-
-        def pluginConfig = ctx.grailsApplication.config.plugin.droolsjbpmCore
-        System.setProperty('jbpm.data.dir', pluginConfig.jbpm.data.dir ?: ctx.getResource('/droolsjbpm/data').file.toString())
 
     }
 

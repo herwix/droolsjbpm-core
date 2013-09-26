@@ -7,5 +7,7 @@
 // For example you can create directory under project tree:
 //
 
+//create standard droolsjbpm folder structure
 ant.mkdir(dir:"${basedir}/web-app/droolsjbpm/resources")
+ant.mkdir(dir:"${basedir}/web-app/droolsjbpm/data")
 
