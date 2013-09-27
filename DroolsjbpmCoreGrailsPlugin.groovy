@@ -20,7 +20,7 @@ class DroolsjbpmCoreGrailsPlugin {
     // resources that are excluded from plugin packaging
     def pluginExcludes = [
             "grails-app/views/error.gsp",
-            "web-app/droolsjbpm/**"
+            "grails-app/conf/droolsjbpm/**"
     ]
 
     def dependsOn = ['platformCore' : '* > 1.0.RC5']
@@ -74,8 +74,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
                                 'org.jbpm.process.audit' ])
         'entityManagerFactory.mappingResources'(type: List, defaultValue: [ 'META-INF/JBPMorm.xml','META-INF/Taskorm.xml' ])
 
-        'path.to.jbpm.data.dir'(type: String, defaultValue: 'web-app/droolsjbpm/data')
-        'path.to.localResources.dir'(type: String, defaultValue: 'web-app/droolsjbpm/resources')
+        //relative path resolves against project root as parent. Even for installed plugins.
+        'path.to.jbpm.data.dir'(type: String, defaultValue: 'grails-app/conf/droolsjbpm/data')
+        'path.to.localResources.dir'(type: String, defaultValue: 'grails-app/conf/droolsjbpm/resources')
 
         'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
 

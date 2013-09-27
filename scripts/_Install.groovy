@@ -8,6 +8,6 @@
 //
 
 //create standard droolsjbpm folder structure
-ant.mkdir(dir:"${basedir}/web-app/droolsjbpm/resources")
-ant.mkdir(dir:"${basedir}/web-app/droolsjbpm/data")
+ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/resources")
+ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/data")
 

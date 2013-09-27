@@ -9,6 +9,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder;
 import org.kie.api.io.ResourceType;
 import org.kie.internal.io.ResourceFactory;
+import org.kie.internal.runtime.manager.RegisterableItemsFactory;
 import org.kie.internal.runtime.manager.RuntimeEnvironment;
 import org.kie.internal.task.api.UserGroupCallback;
 
@@ -28,6 +29,8 @@ public class RuntimeEnvironmentFactory {
 
     private UserGroupCallback userGroupCallback;
 
+    private RegisterableItemsFactory registerableItemsFactory;
+
     /**
      * Simple RuntimeEnvironmentBuilder factory method that can be used to set up a custom RuntimeEnvironment
      * via the builder methods. UserGroupCallback and EntityManagerFactory are already configured.
@@ -39,6 +42,7 @@ public class RuntimeEnvironmentFactory {
         return RuntimeEnvironmentBuilder.getDefault()
                 .userGroupCallback(userGroupCallback)
                 .entityManagerFactory(entityManagerFactory);
+
     }
 
     /**
@@ -81,5 +85,8 @@ public class RuntimeEnvironmentFactory {
         this.entityManagerFactory = entityManagerFactory;
     }
 
+    public void setRegisterableItemsFactory(RegisterableItemsFactory registerableItemsFactory) {
+        this.registerableItemsFactory = registerableItemsFactory;
+    }
 
 }
