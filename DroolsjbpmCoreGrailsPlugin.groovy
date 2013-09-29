@@ -1,5 +1,5 @@
 import com.iterranux.droolsjbpmCore.internal.TransactionManagerJNDIRegistrator
-import com.iterranux.droolsjbpmCore.runtime.manager.impl.RuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.RuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
@@ -13,6 +13,8 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 
 
 class DroolsjbpmCoreGrailsPlugin {
+    // maven groupId
+    def groupId = "com.iterranux"
     // the plugin version
     def version = "1.0.RC1"
     // the version or versions of Grails the plugin is designed for
@@ -92,6 +94,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
     def doWithConfig = { config ->
 
+
+        /*
+        Activate Bean Package Annotations does not work, see at the bottom of doWithSpring
         //Merge packages list
         def beanPackagesList = ['com.iterranux.droolsjbpmCore']
         if(config.grails.spring.bean.packages){
@@ -102,6 +107,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
             //enable spring annotations for these packages
             grails.spring.bean.packages = beanPackagesList
         }
+        */
     }
 
     def doWithSpring = {
@@ -260,6 +266,12 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         xmlns kie:"http://drools.org/schema/kie-spring"
 
+        kie.kmodule(id:'testModule'){
+            kie.kbase(name:'testKBase', packages:'droolsjbpm.resources', default:'true'){
+                kie.ksession(name:'statefulSession', type:'stateful', default:'true')
+            }
+        }
+
         droolsjbpmGlobals(MapGlobalResolver)
 
         dacceptor(ClassObjectMarshallingStrategyAcceptor,['*.*'])
@@ -280,6 +292,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         }
 
          */
+
+
 
     }
 

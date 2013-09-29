@@ -1,4 +1,4 @@
-package com.iterranux.droolsjbpmCore.runtime.manager.impl;
+package com.iterranux.droolsjbpmCore.runtime.environment.impl;
 
 
 import com.iterranux.droolsjbpmCore.internal.ResourceTypeIOFileFilter;
@@ -49,16 +49,21 @@ public class RuntimeEnvironmentFactory {
      * RuntimeEnvironment factory method that automatically registers all drools resources in the given
      * directory into the RuntimeEnvironment KieBase.
      *
-     * @param pathToResourcesDir
+     * @param pathToLocalResourcesDir
      * @return RuntimeEnvironment with local resources in KieBase.
      */
-    public RuntimeEnvironment newLocalResourcesRuntimeEnvironment(String pathToResourcesDir){
+    public RuntimeEnvironment newLocalResourcesRuntimeEnvironment(String pathToLocalResourcesDir){
 
         RuntimeEnvironmentBuilder builder = newDefaultRuntimeEnvironmentBuilder();
 
-        //Add all assets in droolsjbpm resources folder to kbase
-        if(pathToResourcesDir != null){
-            File resourcesFolder = new File(pathToResourcesDir);
+        if(pathToLocalResourcesDir == null){
+
+            log.error("No path to the local resources folder was set. Please set a valid path for the config option or don't instantiate a LocalResourcesRuntimeEnvironment.");
+
+        }else{
+            //Folder in file system: Add all assets in droolsjbpm resources folder to kbase
+
+            File resourcesFolder = new File(pathToLocalResourcesDir);
 
             if(resourcesFolder.isDirectory()){
                 for(File file : FileUtils.listFiles(resourcesFolder, new ResourceTypeIOFileFilter(), TrueFileFilter.INSTANCE)){
@@ -67,10 +72,8 @@ public class RuntimeEnvironmentFactory {
                 }
 
             }else{
-                log.error("The path ("+ pathToResourcesDir +") to the local resources folder does not exist. Please set a valid path for the config option or don't instantiate a LocalResourcesRuntimeEnvironment.");
+                log.error("The path ("+ pathToLocalResourcesDir +") to the local resources folder does not exist. Please set a valid path for the config option or don't instantiate a LocalResourcesRuntimeEnvironment.");
             }
-        }else{
-            log.error("No path to the local resources folder was set. Please set a valid path for the config option or don't instantiate a LocalResourcesRuntimeEnvironment.");
         }
 
         return builder.get();

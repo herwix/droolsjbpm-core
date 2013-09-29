@@ -6,8 +6,8 @@
 //
 // For example you can create directory under project tree:
 //
+//    ant.mkdir(dir:"${basedir}/grails-app/jobs")
+//
 
-//create standard droolsjbpm folder structure
-ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/resources")
+//Create Droolsjbpm Data dir
 ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/data")
-

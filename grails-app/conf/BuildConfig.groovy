@@ -42,7 +42,10 @@ grails.project.dependency.resolution = {
         runtime "org.jbpm:jbpm-bpmn2:${droolsVersion}"
         runtime "org.jbpm:jbpm-flow:${droolsVersion}"
 
-        runtime "org.jbpm:jbpm-runtime-manager:${droolsVersion}"
+        runtime ("org.jbpm:jbpm-runtime-manager:${droolsVersion}") {
+            excludes 'org.slf4j:slf4j-ext:1.7.2'
+
+        }
         runtime "org.jbpm:jbpm-persistence-jpa:${droolsVersion}"
 
 
@@ -60,7 +63,7 @@ grails.project.dependency.resolution = {
             }
         }
 
-        /* Unnecessary at the moment
+        /*
         runtime("org.kie:kie-spring:${droolsVersion}") {
             excludes    'org.springframework:spring-core:3.0.6.RELEASE',
                         'org.springframework:spring-beans:3.0.6.RELEASE',
@@ -70,6 +73,7 @@ grails.project.dependency.resolution = {
                         'org.jboss.weld.se:weld-se-core:1.1.13.Final'
         }
         */
+
     }
 
     plugins {
