@@ -24,10 +24,10 @@ target(droolsjbpm: "The droolsjbpm-core script.") {
             //Create folder structure
             def applicationUtils = classLoader.loadClass('com.iterranux.droolsjbpmCore.internal.ApplicationUtils')
             String folderName = applicationUtils.getApplicationNameAsPropertyName()
-            ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/resources/${folderName}")
+            ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/${folderName}/resources")
 
             //Write kmodule.xml
-            def kmodule = new File("${basedir}/grails-app/conf/droolsjbpm/resources/kmodule.xml")
+            def kmodule = new File("${basedir}/grails-app/conf/droolsjbpm/${folderName}/kmodule.xml")
             if(! kmodule.exists()){
                 kmodule.write(kmoduleContent,'UTF-8')
             }
@@ -35,10 +35,10 @@ target(droolsjbpm: "The droolsjbpm-core script.") {
             println """
 ##### kmodule folder structure initialized! #####
 
-You now have a folder 'grails-app/conf/droolsjbpm/resources/$folderName' where you can put your drools/jbpm resources.
+You now have a folder 'grails-app/conf/droolsjbpm/$folderName/resources' where you can put your drools/jbpm resources.
 This folder is treated like the 'src/main/resources' folder in a standard maven based kmodule. Just put your packages in there.
 
-This also created a kmodule.xml file at 'grails-app/conf/droolsjbpm/resources/kmodule.xml'.
+This also created a kmodule.xml file at 'grails-app/conf/droolsjbpm/$folderName/kmodule.xml'.
 This can be used just as a regular kmodule.xml, however, it should not be moved to any other directory.
 
 Happy Coding!       """

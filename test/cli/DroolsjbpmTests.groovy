@@ -41,8 +41,8 @@ class DroolsjbpmTests extends AbstractCliTestCase {
 
         cleanUp()
 
-        def kmodule = new File("grails-app/conf/droolsjbpm/resources/kmodule.xml")
-        def resources =  new File("grails-app/conf/droolsjbpm/resources/droolsjbpmCore")
+        def kmodule = new File("grails-app/conf/droolsjbpm/droolsjbpmCore/kmodule.xml")
+        def resources =  new File("grails-app/conf/droolsjbpm/droolsjbpmCore/resources")
 
         assertFalse("Kmodule resources Folder doesn't exist",resources.exists())
         assertFalse("Kmodule doesn't exists", kmodule.exists())
@@ -62,17 +62,17 @@ class DroolsjbpmTests extends AbstractCliTestCase {
 
         cleanUp()
 
-        def kmodule = new File("grails-app/conf/droolsjbpm/resources/kmodule.xml")
-        def resources =  new File("grails-app/conf/droolsjbpm/resources/droolsjbpmCore")
+        def kmodule = new File("grails-app/conf/droolsjbpm/droolsjbpmCore/kmodule.xml")
+        def resources =  new File("grails-app/conf/droolsjbpm/droolsjbpmCore/resources")
 
         assertFalse("Kmodule resources Folder doesn't exist",resources.exists())
         assertFalse("Kmodule doesn't exists", kmodule.exists())
 
         //Set up fake kmodule
-        def folder = new File("grails-app/conf/droolsjbpm/resources/")
+        def folder = new File("grails-app/conf/droolsjbpm/droolsjbpmCore")
         folder.mkdirs()
-
         kmodule.write("TEST")
+
 
         execute(["droolsjbpm","--init-kmodule"])
 
