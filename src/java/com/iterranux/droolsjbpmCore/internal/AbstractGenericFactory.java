@@ -15,7 +15,7 @@ import java.util.*;
  *
  * @param <T>
  */
-public abstract class AbstractFactory<T extends AbstractFactoryManufacturable> implements ApplicationContextAware {
+public abstract class AbstractGenericFactory<T extends GenericFactoryManufacturable> implements ApplicationContextAware {
 
     protected ApplicationContext applicationContext;
 
@@ -59,7 +59,7 @@ public abstract class AbstractFactory<T extends AbstractFactoryManufacturable> i
      */
 
     public Class getManufacturableClass() {
-        return getTypeArguments(AbstractFactory.class, getClass()).get(0);
+        return getTypeArguments(AbstractGenericFactory.class, getClass()).get(0);
     }
 
     /**

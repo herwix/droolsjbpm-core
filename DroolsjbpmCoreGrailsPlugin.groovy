@@ -1,20 +1,24 @@
 import com.iterranux.droolsjbpmCore.internal.TransactionManagerJNDIRegistrator
-import com.iterranux.droolsjbpmCore.runtime.environment.impl.RuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.build.impl.KieModuleBuilder
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.AbstractRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.AbstractRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.AbstractRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.KmoduleRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.LocalResourcesRuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
+import grails.util.Environment
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
-
+import org.kie.api.KieServices
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 
 
 
 class DroolsjbpmCoreGrailsPlugin {
-    // maven groupId
-    def groupId = "com.iterranux"
     // the plugin version
     def version = "1.0.RC1"
     // the version or versions of Grails the plugin is designed for
@@ -78,9 +82,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         //relative path resolves against project root as parent. Even for installed plugins.
         'path.to.jbpm.data.dir'(type: String, defaultValue: 'grails-app/conf/droolsjbpm/data')
-        'path.to.localResources.dir'(type: String, defaultValue: 'grails-app/conf/droolsjbpm/resources')
 
-        'runtimeManager.default.registerWithSpring'(type:Boolean, defaultValue: true)
+        'runtimeManager.localResources.activate'(type:Boolean, defaultValue: false)
+        'runtimeManager.localResources.dir'(type: String, defaultValue: 'src/resources')
 
         'taskservice.userGroupCallback.disable'(type:Boolean, defaultValue: false)
         'taskservice.userGroupCallback.userProperties'(type:Properties, defaultValue: getUserProperties())
@@ -179,23 +183,41 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         }
 
         /**
-         * Set up the default runtimeEnvironmentFactory
+         * Set up an abstract bean that provides the properties for the AbstractRuntimeEnvironmentFactory.
+         * Can be used by RuntimeEnvironmentFactory Implementations.
          */
-        droolsjbpmRuntimeEnvironmentFactory(RuntimeEnvironmentFactory){
+        abstractRuntimeEnvironmentFactory {
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
             userGroupCallback = ref('droolsjbpmUserGroupCallback')
         }
 
         /**
-         * Creates a RuntimeEnvironment with a kbase based on assets in the given directory.
+         * Set up a factory bean for runtimeEnvironments based on local resources
          */
-        droolsjbpmLocalResourcesRuntimeEnvironment(droolsjbpmRuntimeEnvironmentFactory: 'newLocalResourcesRuntimeEnvironment',
-                pluginConfig.path.to.localResources.dir)
+        droolsjbpmLocalResourcesRuntimeEnvironmentFactory(LocalResourcesRuntimeEnvironmentFactory){ bean ->
+            bean.parent = abstractRuntimeEnvironmentFactory
+        }
 
         /**
-         * Set up default runtimeManagers. They are lazy init so they are only initialized if needed.
+         * Set up a factory bean for runtimeEnvironments based on kmodules.
+         * This will mostly be used by plugins which are built upon this core plugin.
          */
-        if(pluginConfig.runtimeManager.default.registerWithSpring){
+        droolsjbpmKmoduleRuntimeEnvironmentFactory(KmoduleRuntimeEnvironmentFactory){ bean ->
+            bean.parent = abstractRuntimeEnvironmentFactory
+            kieServices = ref('kieServices')
+        }
+
+        /**
+         * Set up local resources if configured to do so. This provides 3 basic runtimeManagers for the client application.
+         * They are lazy init so they are only initialized if needed. This is intended to allow a quick start with the plugin.
+         */
+        if(pluginConfig.runtimeManager.localResources.activate){
+
+            /**
+             * Creates a RuntimeEnvironment with local resources in the directory provided by plugin.droolsjbpmCore.runtimeManager.localResources.dir.
+             */
+            droolsjbpmLocalResourcesRuntimeEnvironment(droolsjbpmLocalResourcesRuntimeEnvironmentFactory:'newRuntimeEnvironment',
+                    pluginConfig.runtimeManager.localResources.dir)
 
             /**
              *  Per Process Instance
@@ -259,6 +281,23 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         droolsjbpmPerProcessInstanceRuntimeManagerFactory(PerProcessInstanceRuntimeManagerFactory)
         droolsjbpmPerRequestRuntimeManagerFactory(PerRequestRuntimeManagerFactory)
 
+        /**
+         * Create kieServices bean to make it available for injection
+         */
+        kieServices(KieServices.Factory){ bean ->
+            bean.factoryMethod = 'get'
+        }
+
+        /**
+         * Creates kieRepository bean to make it available for injection
+         */
+        kieRepository(kieServices: 'getRepository')
+
+        /**
+         * Set up the KieModuleBuilder which automatically builds all grails plugin kmodules on the classpath.
+         * TODO: Reload on change at runtime
+         */
+        droolsjbpmKieModuleBuilder(KieModuleBuilder,ref('kieServices'))
 
         /**
          * Drools Spring Integration, KStore and Environment set up.

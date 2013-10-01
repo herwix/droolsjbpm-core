@@ -1,7 +1,10 @@
 package com.iterranux.droolsjbpmCore.task
 
+import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
+import grails.util.Holders
 import org.kie.api.runtime.KieSession;
-import org.kie.api.runtime.manager.RuntimeEngine;
+import org.kie.api.runtime.manager.RuntimeEngine
+import org.kie.api.runtime.manager.RuntimeManager;
 import org.kie.api.runtime.process.ProcessInstance;
 import org.kie.api.task.TaskService;
 import org.kie.api.task.model.TaskSummary;
@@ -12,10 +15,17 @@ import static org.junit.Assert.assertNull;
 
 class TaskIntegrationTests extends GroovyTestCase{
 
-    def singletonRuntimeManager
+    def droolsjbpmKmoduleRuntimeEnvironmentFactory
+
+    def droolsjbpmRuntimeManagerFactory
+
+    protected RuntimeManager createRuntimeManager(){
+        def runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment('org.grails.plugins','droolsjbpmCore',Holders.getPluginManager().getGrailsPlugin('droolsjbpmCore').getVersion())
+        return  droolsjbpmRuntimeManagerFactory.newRuntimeManager(SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,runtimeEnvironment,"test")
+    }
 
     void testHumanTaskProcess() {
-        def manager = singletonRuntimeManager
+        def manager = createRuntimeManager()
         RuntimeEngine engine = manager.getRuntimeEngine();
         assertNotNull(engine);
 
@@ -71,6 +81,8 @@ class TaskIntegrationTests extends GroovyTestCase{
         // check the state of process instance
         processInstance = ksession.getProcessInstance(processInstance.getId());
         assertNull(processInstance);
+
+        manager.close()
     }
 
 }

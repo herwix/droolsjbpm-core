@@ -17,13 +17,11 @@ import javax.persistence.EntityManagerFactory;
 import java.io.File;
 
 /**
- * Factory that allows for the easy creation of RuntimeEnvironments.
+ * Abstract Factory that allows for the easy creation of RuntimeEnvironments.
  * EntityManagerFactory and UserGroupCallback are (automatically) configured through spring.
  *
  */
-public class RuntimeEnvironmentFactory {
-
-    private static final Log log = LogFactory.getLog(RuntimeEnvironmentFactory.class);
+public abstract class AbstractRuntimeEnvironmentFactory {
 
     private EntityManagerFactory entityManagerFactory;
 
@@ -39,45 +37,15 @@ public class RuntimeEnvironmentFactory {
      */
     public RuntimeEnvironmentBuilder newDefaultRuntimeEnvironmentBuilder(){
 
-        return RuntimeEnvironmentBuilder.getDefault()
+        RuntimeEnvironmentBuilder builder = RuntimeEnvironmentBuilder.getDefault()
                 .userGroupCallback(userGroupCallback)
                 .entityManagerFactory(entityManagerFactory);
 
-    }
-
-    /**
-     * RuntimeEnvironment factory method that automatically registers all drools resources in the given
-     * directory into the RuntimeEnvironment KieBase.
-     *
-     * @param pathToLocalResourcesDir
-     * @return RuntimeEnvironment with local resources in KieBase.
-     */
-    public RuntimeEnvironment newLocalResourcesRuntimeEnvironment(String pathToLocalResourcesDir){
-
-        RuntimeEnvironmentBuilder builder = newDefaultRuntimeEnvironmentBuilder();
-
-        if(pathToLocalResourcesDir == null){
-
-            log.error("No path to the local resources folder was set. Please set a valid path for the config option or don't instantiate a LocalResourcesRuntimeEnvironment.");
-
-        }else{
-            //Folder in file system: Add all assets in droolsjbpm resources folder to kbase
-
-            File resourcesFolder = new File(pathToLocalResourcesDir);
-
-            if(resourcesFolder.isDirectory()){
-                for(File file : FileUtils.listFiles(resourcesFolder, new ResourceTypeIOFileFilter(), TrueFileFilter.INSTANCE)){
-                    builder.addAsset(ResourceFactory.newFileResource(file), ResourceType.determineResourceType(file.getName()));
-                    log.debug("Added resource ("+file.getName()+") to the localResourcesRuntimeEnvironment.");
-                }
-
-            }else{
-                log.error("The path ("+ pathToLocalResourcesDir +") to the local resources folder does not exist. Please set a valid path for the config option or don't instantiate a LocalResourcesRuntimeEnvironment.");
-            }
+        if (registerableItemsFactory != null){
+            builder.registerableItemsFactory(registerableItemsFactory);
         }
 
-        return builder.get();
-
+        return builder;
     }
 
     public void setUserGroupCallback(UserGroupCallback userGroupCallback) {

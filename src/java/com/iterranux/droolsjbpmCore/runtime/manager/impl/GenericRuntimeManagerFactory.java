@@ -1,8 +1,8 @@
 package com.iterranux.droolsjbpmCore.runtime.manager.impl;
 
 
+import com.iterranux.droolsjbpmCore.internal.AbstractGenericFactory;
 import com.iterranux.droolsjbpmCore.runtime.manager.api.RuntimeManagerFactory;
-import com.iterranux.droolsjbpmCore.internal.AbstractFactory;
 import org.drools.core.time.TimerService;
 import org.jbpm.process.core.timer.GlobalSchedulerService;
 import org.jbpm.process.core.timer.TimerServiceRegistry;
@@ -12,23 +12,16 @@ import org.jbpm.runtime.manager.impl.AbstractRuntimeManager;
 import org.jbpm.runtime.manager.impl.SimpleRuntimeEnvironment;
 import org.jbpm.runtime.manager.impl.factory.InMemorySessionFactory;
 import org.jbpm.runtime.manager.impl.factory.JPASessionFactory;
-import org.jbpm.runtime.manager.impl.factory.LocalTaskServiceFactory;
 import org.kie.api.runtime.manager.RuntimeManager;
 import org.kie.internal.runtime.manager.RuntimeEnvironment;
 import org.kie.internal.runtime.manager.SessionFactory;
 import org.kie.internal.runtime.manager.TaskServiceFactory;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  *  Generic RuntimeManagerFactory that can execute any RuntimeManagerFactory that was injected via Spring.
  *  Allows for easy addition of new RuntimeManagers via plugins.
  */
-public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManagerFactory> {
+public class GenericRuntimeManagerFactory extends AbstractGenericFactory<RuntimeManagerFactory> {
 
     private TaskServiceFactory taskServiceFactory;
 
@@ -36,7 +29,7 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
      * Creates a new RuntimeManager of the given Type for the supplied RuntimeEnvironment.
      *
      * @param runtimeManagerType The runtimeManagerType - accessibale via RuntimeManagerFactoryImpl.RUNTIME_MANAGER_TYPE
-     * @param environment The runtime environment - can be created via the RuntimeEnvironmentFactory
+     * @param environment The runtime environment - can be created via the AbstractRuntimeEnvironmentFactory
      * @return runtimeManager
      */
     public RuntimeManager newRuntimeManager(String runtimeManagerType, RuntimeEnvironment environment){
@@ -48,7 +41,7 @@ public class GenericRuntimeManagerFactory extends AbstractFactory<RuntimeManager
      * Creates a new RuntimeManager of the given Type with that unique identifier for the supplied RuntimeEnvironment.
      *
      * @param runtimeManagerType The runtimeManagerType - accessibale via RuntimeManagerFactoryImpl.RUNTIME_MANAGER_TYPE
-     * @param environment The runtime environment - can be created via the RuntimeEnvironmentFactory
+     * @param environment The runtime environment - can be created via the AbstractRuntimeEnvironmentFactory
      * @param identifier Unique identifier - Instantiation with a non unique identifier will lead to an exception.
      * @return runtimeManager
      */
