@@ -1,13 +1,18 @@
 includeTargets << grailsScript("_GrailsInit")
 includeTargets << grailsScript("_GrailsArgParsing")
+includeTargets << grailsScript("_GrailsPackage")
+includeTargets << grailsScript('_GrailsBootstrap')
 
 USAGE = """
-    droolsjbpm [--init-kmodule]
+    droolsjbpm [--init-kmodule] [--init-local-resources]
 
 where
     init-kmodule  = Initializes the folder structure to automatically build a kmodule.
                     At the moment this kmodule is only compatible with a grails-app
                     that has the droolsjbpm-core plugin installed.
+
+    init-local-resources = Initilizes the folder structure for a simple local resources
+                           based runtimeEnvironment.
 
 """
 
@@ -17,7 +22,7 @@ def kmoduleContent = """<?xml version="1.0" encoding="UTF-8"?>
 </kmodule>"""
 
 target(droolsjbpm: "The droolsjbpm-core script.") {
-    depends parseArguments
+    depends parseArguments, compile, loadApp, configureApp
     try{
         if (argsMap["init-kmodule"]) {
 
@@ -43,6 +48,31 @@ This can be used just as a regular kmodule.xml, however, it should not be moved 
 
 Happy Coding!       """
 
+        }else if (argsMap["init-local-resources"]) {
+            String location = grailsApp.config.plugin.droolsjbpmCore.runtimeManager.localResources.dir
+            def folder = new File(location)
+            if (!folder.exists()){
+                folder.mkdirs()
+            }
+            println """
+##### local resources folder structure initialized! #####
+
+You now have a folder at '${folder.toPath()}' where you can put your drools/jbpm resources.
+If you now set the 'plugin.droolsjbpmCore.runtimeManager.localResources.activate' option to true,
+all droolsjbpm resources in there will be added to a set of 3 different RuntimeManagers that can be
+used by your application via injection (e.g. use them like a grails service).
+
+They are named:
+
+    singletonRuntimeManager - a global session for all resources
+
+    perProcessInstanceRuntimeManager - a new session for every process, kept until process is finished
+
+    perRequestRuntimeManager - a new session for every request
+
+For more information about runtimeManager please refer to the jbpm 6 documentation.
+
+Happy Coding!       """
         }else{
             println "You have to specify an option for this plugin: \n"
             println USAGE
