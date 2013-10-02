@@ -27,7 +27,7 @@ target(droolsjbpm: "The droolsjbpm-core script.") {
         if (argsMap["init-kmodule"]) {
 
             //Create folder structure
-            def applicationUtils = classLoader.loadClass('com.iterranux.droolsjbpmCore.internal.DroolsjbpmCoreUtils')
+            def applicationUtils = appCtx.getBean('droolsjbpmCoreUtils')
             String folderName = applicationUtils.getApplicationNameAsPropertyName()
             ant.mkdir(dir:"${basedir}/grails-app/conf/droolsjbpm/${folderName}/resources")
 

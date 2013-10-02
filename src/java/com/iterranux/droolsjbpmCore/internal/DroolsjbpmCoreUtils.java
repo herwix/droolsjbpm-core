@@ -17,12 +17,12 @@ public class DroolsjbpmCoreUtils {
 
     KieServices kieServices;
 
-    public static String getApplicationNameAsClassName(){
+    public String getApplicationNameAsClassName(){
 
         return GrailsNameUtils.getNameFromScript(Metadata.getCurrent().getApplicationName());
     }
 
-    public static String getApplicationNameAsPropertyName(){
+    public String getApplicationNameAsPropertyName(){
 
         return GrailsNameUtils.getPropertyName(getApplicationNameAsClassName());
     }
