@@ -46,7 +46,7 @@ public class KieModuleBuilder {
      @PostConstruct
      public void buildKmodulesForGrailsModules() throws IOException{
 
-        log.debug("Starting build of kmodules for grails modules");
+        log.debug("Starting build of KieModules for grails modules");
 
         //Find all kmodule.xml
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
@@ -64,6 +64,7 @@ public class KieModuleBuilder {
 
                 //Only build kmodule for modules that exist
                 if ( releaseId != null ){
+                    log.debug("Found KieModule for: "+moduleName);
 
                     org.springframework.core.io.Resource[] moduleResources = resolver.getResources("classpath*:/droolsjbpm/"+moduleName+"/resources/**");
 
@@ -100,8 +101,8 @@ public class KieModuleBuilder {
                         throw new RuntimeException("Error: \n" + kbuilder.getResults().toString());
                     }
                 }else{
-                    log.error("Error: There was an attempt to build a kmodule for a plugin or application named '"+moduleName+"' which doesn't exist.\n" +
-                              "       Please check that your kmodule directory structure is setup as intended:\n\n" +
+                    log.error("Error: There was an attempt to build a KieModule for a plugin or application named '"+moduleName+"' which doesn't exist.\n" +
+                              "       Please check that your KieModule directory structure is setup as intended:\n\n" +
                               "          1) Save any resources you might have in the 'grails-app/conf/droolsjbpm' to a secure location\n" +
                               "          2) Delete anything in the 'grails-app/conf/droolsjbpm' folder except the 'data' directory\n" +
                               "          3) Use the grails command 'droolsjbpm --init-kmodule' to set up a correct folder structure\n\n" +
@@ -110,7 +111,7 @@ public class KieModuleBuilder {
             }
 
         }
-        log.debug("Finished build of kmodules for grails modules");
+        log.debug("Finished build of KieModules for grails modules");
     }
 
     /**
