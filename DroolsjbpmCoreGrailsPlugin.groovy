@@ -272,7 +272,9 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          * Set up the KieModuleBuilder which automatically builds all grails plugin kmodules on the classpath.
          * TODO: Reload on change at runtime
          */
-        droolsjbpmKieModuleBuilder(KieModuleBuilder,ref('kieServices'))
+        droolsjbpmKieModuleBuilder(KieModuleBuilder,ref('kieServices')){
+            droolsjbpmCoreUtils = ref('droolsjbpmCoreUtils')
+        }
 
         /**
          * Drools Spring Integration, KStore and Environment set up.

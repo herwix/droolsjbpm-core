@@ -31,17 +31,25 @@ public class DroolsjbpmCoreUtils {
         return KieModuleBuilder.KMODULE_GROUP_ID;
     }
 
-    public String getVersionForPlugin(String pluginName){
+    /**
+     * Determines the version of the named grails module.
+     *
+     * @param moduleName grails module - either a plugin or an app
+     * @return Version of the grails module
+     */
+    public String getVersionForGrailsModule(String moduleName){
 
-        if(pluginManager.hasGrailsPlugin(pluginName)){
-            return pluginManager.getGrailsPlugin(pluginName).getVersion();
+        if(pluginManager.hasGrailsPlugin(moduleName)){
+            return pluginManager.getGrailsPlugin(moduleName).getVersion();
+        }else if (getApplicationNameAsPropertyName().equals(moduleName)){
+            return Metadata.getCurrent().getApplicationVersion();
         }
-        log.error("ERROR: Could not determine version for plugin '"+pluginName+"' because there is no plugin with that name installed.");
+        log.error("ERROR: Could not determine version for grails module '"+ moduleName +"' because there is no grails module (plugin or application) with that name installed.");
         return null;
     }
 
-    public ReleaseId getReleaseIdForPlugin(String pluginName){
-        return kieServices.newReleaseId(getKmoduleGroupId(),pluginName,getVersionForPlugin(pluginName));
+    public ReleaseId getReleaseIdForGrailsModule(String moduleName){
+        return kieServices.newReleaseId(getKmoduleGroupId(), moduleName, getVersionForGrailsModule(moduleName));
     }
 
     public void setPluginManager(GrailsPluginManager pluginManager) {

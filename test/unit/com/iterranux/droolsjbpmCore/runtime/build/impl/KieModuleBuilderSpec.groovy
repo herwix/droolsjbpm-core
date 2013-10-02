@@ -19,7 +19,7 @@ class KieModuleBuilderSpec extends Specification {
     void "test extraction of plugin name from kmodule.xml url"() {
 
         when:
-            def pluginName = KieModuleBuilder.extractPluginNameFromKmoduleXmlUrl("abc/sdc/droolsjbpm/pluginName/kmodule.xml")
+            def pluginName = KieModuleBuilder.extractModuleNameFromKmoduleXmlUrl("abc/sdc/droolsjbpm/pluginName/kmodule.xml")
 
         then:
             pluginName == "pluginName"
@@ -29,7 +29,7 @@ class KieModuleBuilderSpec extends Specification {
     void "test creation of internal kmodule path for resource path and pluginName"() {
 
         expect:
-            path == KieModuleBuilder.getKmodulePathForResourceUrlAndPluginName(orgPath, "pluginName")
+            path == KieModuleBuilder.getKmodulePathForResourceUrlAndModuleName(orgPath, "pluginName")
 
 
         where:
@@ -44,7 +44,7 @@ class KieModuleBuilderSpec extends Specification {
     void "test creation of internal kmodule path for resource path and pluginName throws exception on illegal format"() {
 
         when:
-            KieModuleBuilder.getKmodulePathForResourceUrlAndPluginName(a, "pluginName")
+            KieModuleBuilder.getKmodulePathForResourceUrlAndModuleName(a, "pluginName")
 
         then:
             thrown(IllegalArgumentException)

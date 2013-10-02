@@ -1,11 +1,9 @@
 package com.iterranux.droolsjbpmCore.runtime.build.impl;
 
-import grails.util.Holders;
+import com.iterranux.droolsjbpmCore.internal.DroolsjbpmCoreUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.codehaus.groovy.grails.plugins.GrailsPlugin;
-import org.codehaus.groovy.grails.plugins.GrailsPluginManager;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -31,26 +29,26 @@ public class KieModuleBuilder {
 
     private KieResources kieResources;
 
+    private DroolsjbpmCoreUtils droolsjbpmCoreUtils;
+
     public KieModuleBuilder(KieServices ks){
         kieServices = ks;
         kieResources = kieServices.getResources();
     }
 
     /**
-     * Builds all kmodules from grails plugins that it can find on the classpath.
+     * Builds all kmodules from grails plugins or the kmodule from the parent application that it can find on the classpath.
      * Kmodules are registered under the release id:
      *
      *      org.grails.plugins : Plugin Name : Plugin Version
      *
      */
      @PostConstruct
-     public void buildKmodulesForGrailsPlugins() throws IOException{
+     public void buildKmodulesForGrailsModules() throws IOException{
 
-        log.debug("Starting build of kmodules for grails plugins");
+        log.debug("Starting build of kmodules for grails modules");
 
-        GrailsPluginManager pluginManager = Holders.getPluginManager();
-
-        //Find all plugins which registered
+        //Find all kmodule.xml
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         String pattern= "/droolsjbpm/*/kmodule.xml";
         org.springframework.core.io.Resource[] resources = resolver.getResources("classpath*:"+pattern);
@@ -59,32 +57,31 @@ public class KieModuleBuilder {
 
             if(! isTestResource(kmoduleXml.getURL())){
 
-                String pluginName = extractPluginNameFromKmoduleXmlUrl(kmoduleXml.getURL().toString());
+                String moduleName = extractModuleNameFromKmoduleXmlUrl(kmoduleXml.getURL().toString());
 
-                if ( pluginManager.hasGrailsPlugin(pluginName) ){
+                //ReleaseId for this kmodule
+                ReleaseId releaseId = droolsjbpmCoreUtils.getReleaseIdForGrailsModule(moduleName);
 
-                    GrailsPlugin plugin = pluginManager.getGrailsPlugin(pluginName);
+                //Only build kmodule for modules that exist
+                if ( releaseId != null ){
 
-                    org.springframework.core.io.Resource[] pluginResources = resolver.getResources("classpath*:/droolsjbpm/"+pluginName+"/resources/**");
+                    org.springframework.core.io.Resource[] moduleResources = resolver.getResources("classpath*:/droolsjbpm/"+moduleName+"/resources/**");
 
                     KieFileSystem kfs = kieServices.newKieFileSystem();
 
-                    for(org.springframework.core.io.Resource pluginResource : pluginResources){
-                        URL pluginResourceURL = pluginResource.getURL();
+                    for(org.springframework.core.io.Resource moduleResource : moduleResources){
+                        URL moduleResourceURL = moduleResource.getURL();
 
-                        if (! isTestResource(pluginResourceURL)){
+                        if (! isTestResource(moduleResourceURL)){
 
                             if(log.isDebugEnabled())
-                                log.debug("Resources found for '"+pluginName+"': "+pluginResourceURL);
+                                log.debug("Resources found for '"+moduleName+"': "+moduleResourceURL);
 
-                            org.kie.api.io.Resource kieResource = kieResources.newUrlResource(pluginResourceURL);
-                            kfs.write(getKmodulePathForResourceUrlAndPluginName(pluginResourceURL.toString(), pluginName), kieResource);
+                            org.kie.api.io.Resource kieResource = kieResources.newUrlResource(moduleResourceURL);
+                            kfs.write(getKmodulePathForResourceUrlAndModuleName(moduleResourceURL.toString(), moduleName), kieResource);
 
                         }
                     }
-
-                    //ReleaseId for this kmodule
-                    ReleaseId releaseId = kieServices.newReleaseId(KMODULE_GROUP_ID, pluginName, plugin.getVersion());
 
                     //Generate Basic POM
                     kfs.generateAndWritePomXML(releaseId);
@@ -103,7 +100,7 @@ public class KieModuleBuilder {
                         throw new RuntimeException("Error: \n" + kbuilder.getResults().toString());
                     }
                 }else{
-                    log.error("Error: There was an attempt to build a kmodule for a plugin named '"+pluginName+"' which doesn't exist.\n" +
+                    log.error("Error: There was an attempt to build a kmodule for a plugin or application named '"+moduleName+"' which doesn't exist.\n" +
                               "       Please check that your kmodule directory structure is setup as intended:\n\n" +
                               "          1) Save any resources you might have in the 'grails-app/conf/droolsjbpm' to a secure location\n" +
                               "          2) Delete anything in the 'grails-app/conf/droolsjbpm' folder except the 'data' directory\n" +
@@ -113,7 +110,7 @@ public class KieModuleBuilder {
             }
 
         }
-        log.debug("Finished build of kmodules for grails plugins");
+        log.debug("Finished build of kmodules for grails modules");
     }
 
     /**
@@ -128,13 +125,13 @@ public class KieModuleBuilder {
     }
 
     /**
-     * Trims the URL to the pluginName.
-     * Expected URL format: abc/xyz/droolsjbpm/pluginName/kmodule.xml
+     * Trims the URL to the moduleName.
+     * Expected URL format: abc/xyz/droolsjbpm/moduleName/kmodule.xml
      *
      * @param url of the kmodule.xml file on the classpath
-     * @return pluginName
+     * @return moduleName
      */
-    protected static String extractPluginNameFromKmoduleXmlUrl(String url){
+    protected static String extractModuleNameFromKmoduleXmlUrl(String url){
         url = url.substring(0, url.length()-12);
         return url.substring(url.lastIndexOf("/")+1);
     }
@@ -143,14 +140,14 @@ public class KieModuleBuilder {
      * Creates the correct path for the referenced resource inside the kmodule.
      *
      * @param url of the resource
-     * @param pluginName the resource resides in
+     * @param moduleName the resource resides in
      * @return path inside the kmodule
      */
-    protected static String getKmodulePathForResourceUrlAndPluginName(String url, String pluginName){
-        String pattern = "/droolsjbpm/"+pluginName+"/resources/";
+    protected static String getKmodulePathForResourceUrlAndModuleName(String url, String moduleName){
+        String pattern = "/droolsjbpm/"+ moduleName +"/resources/";
         int index = url.indexOf(pattern);
         if ( index == -1){
-            throw new IllegalArgumentException("The provided url had an unexpected format: '/droolsjbpm/"+pluginName+"/resources/' couldn't be identified");
+            throw new IllegalArgumentException("The provided url had an unexpected format: '/droolsjbpm/"+ moduleName +"/resources/' couldn't be identified");
         }
         url = url.substring(index+pattern.length());
         return KMODULE_ROOT_PATH + url;
@@ -162,6 +159,10 @@ public class KieModuleBuilder {
 
     public void setKieResources(KieResources kieResources) {
         this.kieResources = kieResources;
+    }
+
+    public void setDroolsjbpmCoreUtils(DroolsjbpmCoreUtils droolsjbpmCoreUtils) {
+        this.droolsjbpmCoreUtils = droolsjbpmCoreUtils;
     }
 
 }

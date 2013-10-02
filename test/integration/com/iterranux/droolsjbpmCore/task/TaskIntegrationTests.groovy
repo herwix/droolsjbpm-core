@@ -19,7 +19,7 @@ class TaskIntegrationTests extends GroovyTestCase{
     def droolsjbpmCoreUtils
 
     protected RuntimeManager createRuntimeManager(){
-        def runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment(droolsjbpmCoreUtils.getReleaseIdForPlugin('droolsjbpmCore'))
+        def runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment(droolsjbpmCoreUtils.getReleaseIdForGrailsModule('droolsjbpmCore'))
         return  droolsjbpmRuntimeManagerFactory.newRuntimeManager(SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,runtimeEnvironment,"test")
     }
 
