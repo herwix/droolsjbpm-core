@@ -48,7 +48,6 @@ class DroolsjbpmService {
         return environment
     }
 
-
     private static UserGroupCallback getUserGroupCallback(){
 
         Properties properties= new Properties();

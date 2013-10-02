@@ -7,12 +7,18 @@ import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRunti
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
+
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
 import org.kie.api.KieServices
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 
 class DroolsjbpmCoreGrailsPlugin {
+
+    private Logger log = LoggerFactory.getLogger('com.iterranux.droolsjbpmCore.DroolsjbpmCoreGrailsPlugin')
+
     // the plugin version
     def version = "1.0.RC1"
     // the version or versions of Grails the plugin is designed for
@@ -53,6 +59,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
     // Online location of the plugin's browseable source code.
 //    def scm = [ url: "http://svn.codehaus.org/grails-plugins/" ]
 
+    def watchedResources = "file:./grails-app/conf/droolsjbpm/*/resources/**"
+
     def doWithWebDescriptor = { xml ->
         // TODO Implement additions to web.xml (optional), this event occurs before
     }
@@ -79,6 +87,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         'runtimeManager.localResources.activate'(type:Boolean, defaultValue: false)
         'runtimeManager.localResources.dir'(type: String, defaultValue: 'src/resources')
+
+        'runtimeManager.kieModule.reloadActive'(type:Boolean, defaultValue: true)
 
         'taskservice.userGroupCallback.disable'(type:Boolean, defaultValue: false)
         'taskservice.userGroupCallback.userProperties'(type:Properties, defaultValue: getUserProperties())
@@ -270,46 +280,36 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         /**
          * Set up the KieModuleBuilder which automatically builds all grails plugin kmodules on the classpath.
-         * TODO: Reload on change at runtime
          */
         droolsjbpmKieModuleBuilder(KieModuleBuilder,ref('kieServices')){
             droolsjbpmCoreUtils = ref('droolsjbpmCoreUtils')
+            reloadActive = pluginConfig.runtimeManager.kieModule.reloadActive
         }
 
         /**
-         * Drools Spring Integration, KStore and Environment set up.
+         * Example set up of a runtimeManager for a plugin
+         * -----------------------------------------------
          *
-
-        xmlns kie:"http://drools.org/schema/kie-spring"
-
-        kie.kmodule(id:'testModule'){
-            kie.kbase(name:'testKBase', packages:'droolsjbpm.resources', default:'true'){
-                kie.ksession(name:'statefulSession', type:'stateful', default:'true')
-            }
-        }
-
-        droolsjbpmGlobals(MapGlobalResolver)
-
-        dacceptor(ClassObjectMarshallingStrategyAcceptor,['*.*'])
-
-        kie.kstore(id:'kiestore')
-
-        kie.environment(id: 'droolsjbpmEnvironment'){
-            kie.'entity-manager-factory'(ref:'droolsjbpmEntityManagerFactory')
-
-            kie.globals(ref:'droolsjbpmGlobals')
-
-            kie.'object-marshalling-strategies'(){
-                kie.'jpa-placeholder-resolver-strategy'()
-                kie.'serializable-placeholder-resolver-strategy'('strategy-acceptor-ref':"dacceptor")
-            }
-
-
-        }
-
+         * 1) Create an injectible releaseId for this plugin
+         *
+         * pluginReleaseId(droolsjbpmCoreUtils:'getReleaseIdForGrailsModule','pluginName')
+         *
+         * 2) Create a RuntimeEnvironment for this plugin
+         *
+         * pluginRuntimeEnvironment(droolsjbpmKmoduleRuntimeEnvironmentFactory:'newRuntimeEnvironment',
+         *                                  ref('pluginReleaseId'))
+         *
+         * 3) Per Process Instance RuntimeManager for this plugin
+         *
+         * pluginRuntimeManager(droolsjbpmRuntimeManagerFactory: 'newRuntimeManager',
+         *                          PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,
+         *                          ref('pluginRuntimeEnvironment'),
+         *                          'plugin-'+PerProcessInstanceRuntimeManagerFactory.RUNTIME_MANAGER_TYPE){ bean ->
+         *
+         *                              bean.lazyInit = true
+         *                              bean.destroyMethod = "close"
+         *                          }
          */
-
-
 
     }
 
@@ -322,9 +322,17 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
     }
 
     def onChange = { event ->
-        // TODO Implement code that is executed when any artefact that this plugin is
         // watching is modified and reloaded. The event contains: event.source,
         // event.application, event.manager, event.ctx, and event.plugin.
+
+        if(event.ctx && event.application.config.plugin.droolsjbpmCore.runtimeManager.kieModule.reloadActive){
+
+            log.debug(event.source.toString() +" changed and triggered a kieModule reload.")
+
+            def moduleName = event.ctx.getBean('droolsjbpmCoreUtils').getApplicationNameAsPropertyName()
+            //rebuild KieModule for module
+            event.ctx.getBean('droolsjbpmKieModuleBuilder').buildKmoduleForGrailsModule(moduleName)
+        }
     }
 
     def onConfigChange = { event ->

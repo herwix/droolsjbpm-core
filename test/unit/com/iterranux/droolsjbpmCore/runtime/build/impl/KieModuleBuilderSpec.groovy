@@ -2,6 +2,8 @@ package com.iterranux.droolsjbpmCore.runtime.build.impl
 
 import grails.test.mixin.TestMixin
 import grails.test.mixin.support.GrailsUnitTestMixin
+import org.drools.compiler.kie.builder.impl.KieServicesImpl
+import org.kie.api.KieServices
 import spock.lang.Specification
 
 /**
@@ -10,7 +12,13 @@ import spock.lang.Specification
 @TestMixin(GrailsUnitTestMixin)
 class KieModuleBuilderSpec extends Specification {
 
+    def kieModuleBuilder
+
     def setup() {
+
+        def kieServices = mockFor(KieServicesImpl, false).createMock()
+
+        kieModuleBuilder = new KieModuleBuilder(kieServices)
     }
 
     def cleanup() {
@@ -19,7 +27,7 @@ class KieModuleBuilderSpec extends Specification {
     void "test extraction of plugin name from kmodule.xml url"() {
 
         when:
-            def pluginName = KieModuleBuilder.extractModuleNameFromKmoduleXmlUrl("abc/sdc/droolsjbpm/pluginName/kmodule.xml")
+            def pluginName = kieModuleBuilder.extractModuleNameFromKmoduleXmlUrl("abc/sdc/droolsjbpm/pluginName/kmodule.xml")
 
         then:
             pluginName == "pluginName"
@@ -29,7 +37,7 @@ class KieModuleBuilderSpec extends Specification {
     void "test creation of internal kmodule path for resource path and pluginName"() {
 
         expect:
-            path == KieModuleBuilder.getKmodulePathForResourceUrlAndModuleName(orgPath, "pluginName")
+            path == kieModuleBuilder.getKmodulePathForResourceUrlAndModuleName(orgPath, "pluginName")
 
 
         where:
@@ -44,7 +52,7 @@ class KieModuleBuilderSpec extends Specification {
     void "test creation of internal kmodule path for resource path and pluginName throws exception on illegal format"() {
 
         when:
-            KieModuleBuilder.getKmodulePathForResourceUrlAndModuleName(a, "pluginName")
+            kieModuleBuilder.getKmodulePathForResourceUrlAndModuleName(a, "pluginName")
 
         then:
             thrown(IllegalArgumentException)
