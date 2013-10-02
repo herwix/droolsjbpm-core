@@ -20,6 +20,7 @@ grails.project.dependency.resolver = "maven" // or ivy
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
     inherits("global") {
+        excludes 'javax.transaction:jta:1.1'
         // uncomment to disable ehcache
         // excludes 'ehcache'
     }
@@ -33,7 +34,7 @@ grails.project.dependency.resolution = {
 
         mavenRepo "https://repository.jboss.org/nexus/content/groups/public/"
         //mavenRepo "http://repository.codehaus.org"
-        //mavenRepo "http://download.java.net/maven/2/"
+        mavenRepo "http://download.java.net/maven/2/"
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
     dependencies {
@@ -56,13 +57,6 @@ grails.project.dependency.resolution = {
          * use KieScanner to automatically update dependency graphs from maven.
          */
 
-        //Workaround to use Mock JNDI registration in Dev mode.
-        if (Environment.current == Environment.DEVELOPMENT) {
-            runtime('org.springframework:spring-test:3.2.4.RELEASE') {
-                excludes 'org.springframework:spring-core:3.2.4.RELEASE'
-            }
-        }
-
         /*
         runtime("org.kie:kie-spring:${droolsVersion}") {
             excludes    'org.springframework:spring-core:3.0.6.RELEASE',
@@ -74,6 +68,12 @@ grails.project.dependency.resolution = {
         }
         */
 
+
+        //For Atomikos plugin
+        compile ('org.springframework:spring-jms:3.2.4.RELEASE'){
+            export = false
+        }
+
     }
 
     plugins {
@@ -84,12 +84,14 @@ grails.project.dependency.resolution = {
         }
 
         compile(':platform-core:1.0.RC5',
-                ":atomikos:1.1"
+                ":atomikos:1.0"
         ){
             export = false
         }
 
-        runtime(":hibernate:3.6.10.1"){
+        runtime(":hibernate:3.6.10.1"
+                ,":droolsjbpm-atomikos-integration:1.0"
+                ){
             export = false
         }
     }

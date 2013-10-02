@@ -11,7 +11,7 @@ import org.kie.internal.runtime.manager.RuntimeEnvironment;
  * A factory that builds a runtimeEnvironment based upon a kmodule.
  *
  */
-public class KmoduleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironmentFactory{
+public class KieModuleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironmentFactory{
 
     KieServices kieServices;
 
@@ -24,6 +24,17 @@ public class KmoduleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironment
 
         //Retrieve kcontainer by releaseID
         ReleaseId releaseId = kieServices.newReleaseId(groupId,artifactId,version);
+
+        return newRuntimeEnvironment(releaseId, kbaseName);
+    }
+
+    public RuntimeEnvironment newRuntimeEnvironment(ReleaseId releaseId){
+
+        return newRuntimeEnvironment(releaseId, null);
+    }
+
+    public RuntimeEnvironment newRuntimeEnvironment(ReleaseId releaseId, String kbaseName){
+
         KieContainer kieContainer = kieServices.newKieContainer(releaseId);
         KieBase kieBase;
 
@@ -40,7 +51,6 @@ public class KmoduleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironment
 
         return builder.get();
     }
-
 
     public void setKieServices(KieServices kieServices) {
         this.kieServices = kieServices;

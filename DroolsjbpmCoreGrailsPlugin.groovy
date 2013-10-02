@@ -1,22 +1,16 @@
-import com.iterranux.droolsjbpmCore.internal.TransactionManagerJNDIRegistrator
+import com.iterranux.droolsjbpmCore.internal.DroolsjbpmCoreUtils
 import com.iterranux.droolsjbpmCore.runtime.build.impl.KieModuleBuilder
-import com.iterranux.droolsjbpmCore.runtime.environment.impl.AbstractRuntimeEnvironmentFactory
-import com.iterranux.droolsjbpmCore.runtime.environment.impl.AbstractRuntimeEnvironmentFactory
-import com.iterranux.droolsjbpmCore.runtime.environment.impl.AbstractRuntimeEnvironmentFactory
-import com.iterranux.droolsjbpmCore.runtime.environment.impl.KmoduleRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.KieModuleRuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.environment.impl.LocalResourcesRuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
-import grails.util.Environment
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
 import org.kie.api.KieServices
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
-
-
 
 class DroolsjbpmCoreGrailsPlugin {
     // the plugin version
@@ -89,11 +83,8 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         'taskservice.userGroupCallback.disable'(type:Boolean, defaultValue: false)
         'taskservice.userGroupCallback.userProperties'(type:Properties, defaultValue: getUserProperties())
 
-        'transactionManager.registerToJNDI'(type:Boolean, defaultValue: true)
-        'transactionManager.beanName'(type: String, defaultValue: 'atomikosTransactionManager')
         'transactionManager.jndi.lookup'(type: String, defaultValue: 'java:comp/TransactionManager')
         'transactionManager.userTransaction.jndi.lookup'(type: String, defaultValue: 'java:comp/UserTransaction')
-        'transactionManager.userTransaction.beanName'(type: String, defaultValue: 'atomikosUserTransaction')
     }
 
     def doWithConfig = { config ->
@@ -128,17 +119,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          */
         System.setProperty('jbpm.ut.jndi.lookup', pluginConfig.transactionManager.userTransaction.jndi.lookup.toString())
         System.setProperty('jbpm.tm.jndi.lookup', pluginConfig.transactionManager.jndi.lookup.toString())
-
-        if(pluginConfig.transactionManager.registerToJNDI){
-            droolsjbpmTransactionManagerJNDIRegistrator(TransactionManagerJNDIRegistrator){
-
-                transactionManager = ref(pluginConfig.transactionManager.beanName.toString())
-                transactionManagerLookup = pluginConfig.transactionManager.jndi.lookup.toString()
-
-                userTransaction = ref(pluginConfig.transactionManager.userTransaction.beanName.toString())
-                userTransactionLookup = pluginConfig.transactionManager.userTransaction.jndi.lookup.toString()
-            }
-        }
 
         /**
          * Persistence via EntityManagerFactory
@@ -178,13 +158,18 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         /**
          * Set up the generic runtimeManagerFactory
          */
-        droolsjbpmRuntimeManagerFactory(GenericRuntimeManagerFactory){
+        droolsjbpmRuntimeManagerFactory(GenericRuntimeManagerFactory){ bean ->
+
             taskServiceFactory = ref('droolsjbpmTaskServiceFactory')
+
+            bean.lazyInit = true
+
+            bean.dependsOn = 'droolsjbpmKieModuleBuilder'
         }
 
         /**
          * Set up an abstract bean that provides the properties for the AbstractRuntimeEnvironmentFactory.
-         * Can be used by RuntimeEnvironmentFactory Implementations.
+         * Should be used as bean.parent by RuntimeEnvironmentFactory Implementations.
          */
         abstractRuntimeEnvironmentFactory {
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
@@ -202,7 +187,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          * Set up a factory bean for runtimeEnvironments based on kmodules.
          * This will mostly be used by plugins which are built upon this core plugin.
          */
-        droolsjbpmKmoduleRuntimeEnvironmentFactory(KmoduleRuntimeEnvironmentFactory){ bean ->
+        droolsjbpmKmoduleRuntimeEnvironmentFactory(KieModuleRuntimeEnvironmentFactory){ bean ->
             bean.parent = abstractRuntimeEnvironmentFactory
             kieServices = ref('kieServices')
         }
@@ -229,11 +214,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
                 bean.lazyInit = true
                 bean.destroyMethod = "close"
-
-                //wait for JNDI registration if needed
-                if(pluginConfig.transactionManager.registerToJNDI){
-                    bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
-                }
             }
             /**
              *  Singleton
@@ -245,11 +225,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
                 bean.lazyInit = true
                 bean.destroyMethod = "close"
-
-                //wait for JNDI registration if needed
-                if(pluginConfig.transactionManager.registerToJNDI){
-                    bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
-                }
             }
             /**
              *  Per Request
@@ -261,11 +236,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
                 bean.lazyInit = true
                 bean.destroyMethod = "close"
-
-                //wait for JNDI registration if needed
-                if(pluginConfig.transactionManager.registerToJNDI){
-                    bean.dependsOn = 'droolsjbpmTransactionManagerJNDIRegistrator'
-                }
             }
 
         }
@@ -289,9 +259,14 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         }
 
         /**
-         * Creates kieRepository bean to make it available for injection
+         * Set up droolsjbpmCoreUtils helper bean
          */
-        kieRepository(kieServices: 'getRepository')
+        droolsjbpmCoreUtils(DroolsjbpmCoreUtils){ bean ->
+            bean.lazyInit = true
+
+            pluginManager = manager
+            kieServices = ref('kieServices')
+        }
 
         /**
          * Set up the KieModuleBuilder which automatically builds all grails plugin kmodules on the classpath.

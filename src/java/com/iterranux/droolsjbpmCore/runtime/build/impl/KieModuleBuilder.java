@@ -60,44 +60,55 @@ public class KieModuleBuilder {
             if(! isTestResource(kmoduleXml.getURL())){
 
                 String pluginName = extractPluginNameFromKmoduleXmlUrl(kmoduleXml.getURL().toString());
-                GrailsPlugin plugin = pluginManager.getGrailsPlugin(pluginName);
 
-                org.springframework.core.io.Resource[] pluginResources = resolver.getResources("classpath*:/droolsjbpm/"+pluginName+"/resources/**");
+                if ( pluginManager.hasGrailsPlugin(pluginName) ){
 
-                KieFileSystem kfs = kieServices.newKieFileSystem();
+                    GrailsPlugin plugin = pluginManager.getGrailsPlugin(pluginName);
 
-                for(org.springframework.core.io.Resource pluginResource : pluginResources){
-                    URL pluginResourceURL = pluginResource.getURL();
+                    org.springframework.core.io.Resource[] pluginResources = resolver.getResources("classpath*:/droolsjbpm/"+pluginName+"/resources/**");
 
-                    if (! isTestResource(pluginResourceURL)){
+                    KieFileSystem kfs = kieServices.newKieFileSystem();
 
-                        if(log.isDebugEnabled())
-                            log.debug("Resources found for '"+pluginName+"': "+pluginResourceURL);
+                    for(org.springframework.core.io.Resource pluginResource : pluginResources){
+                        URL pluginResourceURL = pluginResource.getURL();
 
-                        org.kie.api.io.Resource kieResource = kieResources.newUrlResource(pluginResourceURL);
-                        kfs.write(getKmodulePathForResourceUrlAndPluginName(pluginResourceURL.toString(), pluginName), kieResource);
+                        if (! isTestResource(pluginResourceURL)){
 
+                            if(log.isDebugEnabled())
+                                log.debug("Resources found for '"+pluginName+"': "+pluginResourceURL);
+
+                            org.kie.api.io.Resource kieResource = kieResources.newUrlResource(pluginResourceURL);
+                            kfs.write(getKmodulePathForResourceUrlAndPluginName(pluginResourceURL.toString(), pluginName), kieResource);
+
+                        }
                     }
-                }
 
-                //ReleaseId for this kmodule
-                ReleaseId releaseId = kieServices.newReleaseId(KMODULE_GROUP_ID, pluginName, plugin.getVersion());
+                    //ReleaseId for this kmodule
+                    ReleaseId releaseId = kieServices.newReleaseId(KMODULE_GROUP_ID, pluginName, plugin.getVersion());
 
-                //Generate Basic POM
-                kfs.generateAndWritePomXML(releaseId);
+                    //Generate Basic POM
+                    kfs.generateAndWritePomXML(releaseId);
 
-                //Add Kmodule.xml
-                kfs.writeKModuleXML(IOUtils.toByteArray(kmoduleXml.getInputStream()));
+                    //Add Kmodule.xml
+                    kfs.writeKModuleXML(IOUtils.toByteArray(kmoduleXml.getInputStream()));
 
-                //Builder for the KieModule from the kfs, also possible from folder
-                KieBuilder kbuilder = kieServices.newKieBuilder(kfs);
+                    //Builder for the KieModule from the kfs, also possible from folder
+                    KieBuilder kbuilder = kieServices.newKieBuilder(kfs);
 
-                //Build KieModule and automatically deploy to kieRepo if successful
-                kbuilder.buildAll();
+                    //Build KieModule and automatically deploy to kieRepo if successful
+                    kbuilder.buildAll();
 
-                //Throw RuntimeException if build failed
-                if(kbuilder.getResults().hasMessages(Message.Level.ERROR)){
-                    throw new RuntimeException("Error: \n" + kbuilder.getResults().toString());
+                    //Throw RuntimeException if build failed
+                    if(kbuilder.getResults().hasMessages(Message.Level.ERROR)){
+                        throw new RuntimeException("Error: \n" + kbuilder.getResults().toString());
+                    }
+                }else{
+                    log.error("Error: There was an attempt to build a kmodule for a plugin named '"+pluginName+"' which doesn't exist.\n" +
+                              "       Please check that your kmodule directory structure is setup as intended:\n\n" +
+                              "          1) Save any resources you might have in the 'grails-app/conf/droolsjbpm' to a secure location\n" +
+                              "          2) Delete anything in the 'grails-app/conf/droolsjbpm' folder except the 'data' directory\n" +
+                              "          3) Use the grails command 'droolsjbpm --init-kmodule' to set up a correct folder structure\n\n" +
+                              "       If the error still persists please file a bug report.");
                 }
             }
 

@@ -41,11 +41,11 @@ class DroolsjbpmTests extends AbstractCliTestCase {
 
         cleanUp()
 
-        def kmodule = new File("grails-app/conf/droolsjbpm/droolsjbpmCore/kmodule.xml")
+        def kmoduleXml = new File("grails-app/conf/droolsjbpm/droolsjbpmCore/kmodule.xml")
         def resources =  new File("grails-app/conf/droolsjbpm/droolsjbpmCore/resources")
 
         assertFalse("Kmodule resources Folder doesn't exist",resources.exists())
-        assertFalse("Kmodule doesn't exists", kmodule.exists())
+        assertFalse("kmodule.xml doesn't exists", kmoduleXml.exists())
 
         execute(["droolsjbpm","--init-kmodule"])
 
@@ -53,8 +53,8 @@ class DroolsjbpmTests extends AbstractCliTestCase {
         verifyHeader()
 
         assertTrue("Kmodule resources folder exists.",resources.exists())
-        assertTrue("Kmodule exists", kmodule.exists())
-        assertTrue("Kmodule has content", kmodule.getText('UTF-8') != '')
+        assertTrue("kmodule.xml exists", kmoduleXml.exists())
+        assertTrue("kmodule.xml has content", kmoduleXml.getText('UTF-8') != '')
 
     }
 
@@ -62,17 +62,29 @@ class DroolsjbpmTests extends AbstractCliTestCase {
 
         cleanUp()
 
-        def kmodule = new File("grails-app/conf/droolsjbpm/droolsjbpmCore/kmodule.xml")
+        def kmoduleXml = new File("grails-app/conf/droolsjbpm/droolsjbpmCore/kmodule.xml")
         def resources =  new File("grails-app/conf/droolsjbpm/droolsjbpmCore/resources")
 
         assertFalse("Kmodule resources Folder doesn't exist",resources.exists())
-        assertFalse("Kmodule doesn't exists", kmodule.exists())
+        assertFalse("kmodule.xml doesn't exists", kmoduleXml.exists())
 
         //Set up fake kmodule
         def folder = new File("grails-app/conf/droolsjbpm/droolsjbpmCore")
         folder.mkdirs()
-        kmodule.write("TEST")
+        def kmoduleContent = """<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://jboss.org/kie/6.0.0/kmodule">
 
+    <kbase name="Test" packages="*">
+        <ksession name="OnlyTest" />
+    </kbase>
+
+</kmodule>
+"""
+        kmoduleXml.write(kmoduleContent,"UTF-8")
+
+
+        assertTrue("kmodule.xml exists", kmoduleXml.exists())
 
         execute(["droolsjbpm","--init-kmodule"])
 
@@ -80,8 +92,8 @@ class DroolsjbpmTests extends AbstractCliTestCase {
         verifyHeader()
 
         assertTrue("Kmodule resources folder exists.",resources.exists())
-        assertTrue("Kmodule exists", kmodule.exists())
-        assertTrue("Kmodule didn't change", kmodule.getText('UTF-8') == "TEST" )
+        assertTrue("kmodule.xml exists", kmoduleXml.exists())
+        assertTrue("kmodule.xml didn't change", kmoduleXml.getText('UTF-8') == kmoduleContent )
 
     }
 }

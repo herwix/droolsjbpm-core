@@ -1,17 +1,14 @@
 package com.iterranux.droolsjbpmCore.task
 
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
-import grails.util.Holders
-import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.KieSession
 import org.kie.api.runtime.manager.RuntimeEngine
-import org.kie.api.runtime.manager.RuntimeManager;
-import org.kie.api.runtime.process.ProcessInstance;
-import org.kie.api.task.TaskService;
-import org.kie.api.task.model.TaskSummary;
+import org.kie.api.runtime.manager.RuntimeManager
+import org.kie.api.runtime.process.ProcessInstance
+import org.kie.api.task.TaskService
+import org.kie.api.task.model.TaskSummary
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*
 
 class TaskIntegrationTests extends GroovyTestCase{
 
@@ -19,8 +16,10 @@ class TaskIntegrationTests extends GroovyTestCase{
 
     def droolsjbpmRuntimeManagerFactory
 
+    def droolsjbpmCoreUtils
+
     protected RuntimeManager createRuntimeManager(){
-        def runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment('org.grails.plugins','droolsjbpmCore',Holders.getPluginManager().getGrailsPlugin('droolsjbpmCore').getVersion())
+        def runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment(droolsjbpmCoreUtils.getReleaseIdForPlugin('droolsjbpmCore'))
         return  droolsjbpmRuntimeManagerFactory.newRuntimeManager(SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,runtimeEnvironment,"test")
     }
 
