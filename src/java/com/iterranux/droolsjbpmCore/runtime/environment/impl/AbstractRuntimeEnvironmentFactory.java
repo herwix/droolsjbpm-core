@@ -18,20 +18,11 @@
 package com.iterranux.droolsjbpmCore.runtime.environment.impl;
 
 
-import com.iterranux.droolsjbpmCore.internal.ResourceTypeIOFileFilter;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder;
-import org.kie.api.io.ResourceType;
-import org.kie.internal.io.ResourceFactory;
-import org.kie.internal.runtime.manager.RegisterableItemsFactory;
-import org.kie.internal.runtime.manager.RuntimeEnvironment;
-import org.kie.internal.task.api.UserGroupCallback;
-
 import javax.persistence.EntityManagerFactory;
-import java.io.File;
+
+import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder;
+import org.kie.internal.runtime.manager.RegisterableItemsFactory;
+import org.kie.internal.task.api.UserGroupCallback;
 
 /**
  * Abstract Factory that allows for the easy creation of RuntimeEnvironments.

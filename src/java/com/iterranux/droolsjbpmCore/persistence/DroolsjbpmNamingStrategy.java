@@ -22,7 +22,9 @@ import org.hibernate.cfg.ImprovedNamingStrategy;
 
 public class DroolsjbpmNamingStrategy extends ImprovedNamingStrategy {
 
-    private static final String PREFIX = Holders.getConfig().flatten().get("plugin.droolsjbpmCore.hibernateNamingStrategy.table.prefix").toString();
+	private static final long serialVersionUID = 1L;
+	
+	private static final String PREFIX = Holders.getConfig().flatten().get("plugin.droolsjbpmCore.hibernateNamingStrategy.table.prefix").toString();
 
     public String tableName(String tableName) {
         return addPrefix(super.tableName(tableName));

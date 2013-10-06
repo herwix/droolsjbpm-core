@@ -39,7 +39,6 @@ public class KieModuleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironme
 
     public RuntimeEnvironment newRuntimeEnvironment(String groupId, String artifactId, String version, String kbaseName){
 
-        //Retrieve kcontainer by releaseID
         ReleaseId releaseId = kieServices.newReleaseId(groupId,artifactId,version);
 
         return newRuntimeEnvironment(releaseId, kbaseName);

@@ -38,7 +38,7 @@ grails.project.dependency.resolution = {
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
     dependencies {
-        def droolsVersion = '6.0.0.CR3'
+        def droolsVersion = '6.0.0.CR4'
 
         runtime "org.jbpm:jbpm-bpmn2:${droolsVersion}"
         runtime "org.jbpm:jbpm-flow:${droolsVersion}"
@@ -70,9 +70,9 @@ grails.project.dependency.resolution = {
 
 
         //For Atomikos plugin
-        compile ('org.springframework:spring-jms:3.2.4.RELEASE'){
-            export = false
-        }
+       compile ('org.springframework:spring-jms:3.2.4.RELEASE'){
+           export = false
+       }
 
     }
 
