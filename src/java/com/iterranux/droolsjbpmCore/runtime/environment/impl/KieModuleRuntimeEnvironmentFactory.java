@@ -18,13 +18,12 @@
 package com.iterranux.droolsjbpmCore.runtime.environment.impl;
 
 import org.jbpm.process.audit.event.AuditEventBuilder;
-import org.jbpm.runtime.manager.impl.KModuleRegisterableItemsFactory;
+import org.jbpm.process.audit.event.DefaultAuditEventBuilderImpl;
 import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.ReleaseId;
 import org.kie.api.runtime.KieContainer;
-import org.kie.internal.runtime.manager.RegisterableItemsFactory;
 import org.kie.internal.runtime.manager.RuntimeEnvironment;
 
 /**
@@ -35,7 +34,7 @@ public class KieModuleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironme
 
     KieServices kieServices;
 
-    private AuditEventBuilder auditEventBuilder;
+    protected AuditEventBuilder auditEventBuilder = new DefaultAuditEventBuilderImpl();
 
     /**
      * Add the kieBase identified by releaseId and kieBaseName to the RuntimeEnvironmentBuilder.
@@ -61,15 +60,12 @@ public class KieModuleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironme
 
         builder.knowledgeBase(kieBase);
 
-        //Add KModuleRegisterableItemsFactory to register Listeners, WorkItemHandlers registered in kmodule.xml
-        RegisterableItemsFactory registerableItemsFactory;
-
+        //Add KModuleRegisterableItemsFactory to register Listeners, WorkItemHandlers registered in kmodule.xml as default
         if(auditEventBuilder == null){
-            registerableItemsFactory = new KModuleRegisterableItemsFactory(kieContainer,kieSessionName);
+            builder.registerableItemsFactory(registerableItemsFactoryFactory.newDroolsjbpmCoreKModuleRegisterableItemFactory(kieContainer, kieSessionName));
         }else{
-            registerableItemsFactory = new KModuleRegisterableItemsFactory(kieContainer,kieSessionName,auditEventBuilder);
+            builder.registerableItemsFactory(registerableItemsFactoryFactory.newDroolsjbpmCoreKModuleRegisterableItemFactory(kieContainer, kieSessionName, auditEventBuilder));
         }
-        builder.registerableItemsFactory(registerableItemsFactory);
 
         return builder;
     }

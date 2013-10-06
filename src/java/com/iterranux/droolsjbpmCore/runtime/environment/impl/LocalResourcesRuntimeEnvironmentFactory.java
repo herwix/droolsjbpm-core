@@ -49,6 +49,7 @@ public class LocalResourcesRuntimeEnvironmentFactory extends AbstractRuntimeEnvi
     public RuntimeEnvironment newRuntimeEnvironment(String pathToLocalResourcesDir){
 
         RuntimeEnvironmentBuilder builder = newDefaultRuntimeEnvironmentBuilder();
+        builder.registerableItemsFactory(registerableItemsFactoryFactory.newDroolsjbpmCoreDefaultRegisterableItemsFactory());
 
         if(pathToLocalResourcesDir == null){
 

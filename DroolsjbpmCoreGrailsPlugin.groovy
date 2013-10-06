@@ -15,16 +15,18 @@
  * You can also obtain a commercial license. Contact: alex@herwix.com for further details.
  */
 
+
 import com.iterranux.droolsjbpmCore.internal.DroolsjbpmCoreUtils
 import com.iterranux.droolsjbpmCore.runtime.build.impl.KieModuleBuilder
 import com.iterranux.droolsjbpmCore.runtime.environment.impl.KieModuleRuntimeEnvironmentFactory
 import com.iterranux.droolsjbpmCore.runtime.environment.impl.LocalResourcesRuntimeEnvironmentFactory
+import com.iterranux.droolsjbpmCore.runtime.environment.impl.RegisterableItemsFactoryFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.GenericRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerProcessInstanceRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.PerRequestRuntimeManagerFactory
 import com.iterranux.droolsjbpmCore.runtime.manager.impl.SingletonRuntimeManagerFactory
+import com.iterranux.droolsjbpmCore.task.impl.LocalHTWorkItemHandlerFactoryImpl
 import com.iterranux.droolsjbpmCore.task.impl.SpringTaskServiceFactory
-
 import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl
 import org.kie.api.KieServices
 import org.slf4j.Logger
@@ -37,7 +39,7 @@ class DroolsjbpmCoreGrailsPlugin {
     private Logger log = LoggerFactory.getLogger('com.iterranux.droolsjbpmCore.DroolsjbpmCoreGrailsPlugin')
 
     // the plugin version
-    def version = "1.0.RC4"
+    def version = "1.0.RC4-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.0 > *"
     // resources that are excluded from plugin packaging
@@ -165,13 +167,33 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         droolsjbpmJpaVendorAdapter(HibernateJpaVendorAdapter)
 
         /**
-         * Set up local task service factory (required to work with runtimeManager)
+         * Create kieServices bean to make it available for injection
          */
-        droolsjbpmTaskServiceFactory(SpringTaskServiceFactory){
-            entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
-            userGroupCallback = ref('droolsjbpmUserGroupCallback')
+        kieServices(KieServices.Factory){ bean ->
+            bean.factoryMethod = 'get'
         }
 
+        /**
+         * Set up droolsjbpmCoreUtils helper bean
+         */
+        droolsjbpmCoreUtils(DroolsjbpmCoreUtils){ bean ->
+            bean.lazyInit = true
+
+            pluginManager = manager
+            kieServices = ref('kieServices')
+        }
+
+        /**
+         * Set up the KieModuleBuilder which automatically builds all grails plugin kmodules on the classpath.
+         */
+        droolsjbpmKieModuleBuilder(KieModuleBuilder,ref('kieServices')){
+            droolsjbpmCoreUtils = ref('droolsjbpmCoreUtils')
+            reloadActive = pluginConfig.runtimeManager.kieModule.reloadActive
+        }
+
+        /**
+         * ****************** RUNTIME ENVIRONMENT ************************
+         */
 
         if(! pluginConfig.taskservice.userGroupCallback.disable){
                 /**
@@ -183,15 +205,23 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         }
 
         /**
-         * Set up the generic runtimeManagerFactory
+         * Set up local task service factory (required to work with runtimeManager)
          */
-        droolsjbpmRuntimeManagerFactory(GenericRuntimeManagerFactory){ bean ->
+        droolsjbpmTaskServiceFactory(SpringTaskServiceFactory){
+            entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
+            userGroupCallback = ref('droolsjbpmUserGroupCallback')
+        }
 
-            taskServiceFactory = ref('droolsjbpmTaskServiceFactory')
+        /**
+         * Simple LocalHTWorkItemHandler Factory
+         */
+        droolsjbpmLocalHTWorkItemHandlerFactory(LocalHTWorkItemHandlerFactoryImpl)
 
-            bean.lazyInit = true
-
-            bean.dependsOn = 'droolsjbpmKieModuleBuilder'
+        /**
+         * RegisterableItemsFactoryFactory used by RuntimeEnvironmentFactories
+         */
+        droolsjbpmRegisterableItemsFactoryFactory(RegisterableItemsFactoryFactory) {
+            localHTWorkItemHandlerFactory = ref('droolsjbpmLocalHTWorkItemHandlerFactory')
         }
 
         /**
@@ -199,6 +229,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          * Should be used as bean.parent by RuntimeEnvironmentFactory Implementations.
          */
         abstractRuntimeEnvironmentFactory {
+            registerableItemsFactoryFactory = ref('droolsjbpmRegisterableItemsFactoryFactory')
             entityManagerFactory = ref('droolsjbpmEntityManagerFactory')
             userGroupCallback = ref('droolsjbpmUserGroupCallback')
         }
@@ -208,6 +239,7 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
          */
         droolsjbpmLocalResourcesRuntimeEnvironmentFactory(LocalResourcesRuntimeEnvironmentFactory){ bean ->
             bean.parent = abstractRuntimeEnvironmentFactory
+            registerableItemsFactoryFactory = ref('droolsjbpmRegisterableItemsFactoryFactory')
         }
 
         /**
@@ -217,7 +249,33 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
         droolsjbpmKmoduleRuntimeEnvironmentFactory(KieModuleRuntimeEnvironmentFactory){ bean ->
             bean.parent = abstractRuntimeEnvironmentFactory
             kieServices = ref('kieServices')
+
         }
+
+        /**
+         * ****************** RUNTIME MANAGER ************************
+         */
+
+        /**
+         * Set up the generic runtimeManagerFactory
+         */
+        droolsjbpmRuntimeManagerFactory(GenericRuntimeManagerFactory){ bean ->
+
+            taskServiceFactory = ref('droolsjbpmTaskServiceFactory')
+            bean.lazyInit = true
+            bean.dependsOn = 'droolsjbpmKieModuleBuilder'
+        }
+
+        /**
+         *  Create the factory beans to be used in the genericRuntimeManagerFactory
+         *
+         *  Need to set up beans manually because annotation driven config doesn't work
+         *  http://jira.grails.org/browse/GRAILS-10365
+         *  TODO: Remove when bug is resolved
+         */
+        droolsjbpmSingletonRuntimeManagerFactory(SingletonRuntimeManagerFactory)
+        droolsjbpmPerProcessInstanceRuntimeManagerFactory(PerProcessInstanceRuntimeManagerFactory)
+        droolsjbpmPerRequestRuntimeManagerFactory(PerRequestRuntimeManagerFactory)
 
         /**
          * Set up local resources if configured to do so. This provides 3 basic runtimeManagers for the client application.
@@ -267,41 +325,6 @@ Integrates the droolsjbpm project with Grails and works as the foundation for Dr
 
         }
 
-        /**
-         *  Create the factory beans to be used in the genericRuntimeManagerFactory
-         *
-         *  Need to set up beans manually because annotation driven config doesn't work
-         *  http://jira.grails.org/browse/GRAILS-10365
-         *  TODO: Remove when bug is resolved
-         */
-        droolsjbpmSingletonRuntimeManagerFactory(SingletonRuntimeManagerFactory)
-        droolsjbpmPerProcessInstanceRuntimeManagerFactory(PerProcessInstanceRuntimeManagerFactory)
-        droolsjbpmPerRequestRuntimeManagerFactory(PerRequestRuntimeManagerFactory)
-
-        /**
-         * Create kieServices bean to make it available for injection
-         */
-        kieServices(KieServices.Factory){ bean ->
-            bean.factoryMethod = 'get'
-        }
-
-        /**
-         * Set up droolsjbpmCoreUtils helper bean
-         */
-        droolsjbpmCoreUtils(DroolsjbpmCoreUtils){ bean ->
-            bean.lazyInit = true
-
-            pluginManager = manager
-            kieServices = ref('kieServices')
-        }
-
-        /**
-         * Set up the KieModuleBuilder which automatically builds all grails plugin kmodules on the classpath.
-         */
-        droolsjbpmKieModuleBuilder(KieModuleBuilder,ref('kieServices')){
-            droolsjbpmCoreUtils = ref('droolsjbpmCoreUtils')
-            reloadActive = pluginConfig.runtimeManager.kieModule.reloadActive
-        }
 
         /**
          * Example set up of a runtimeManager for a plugin

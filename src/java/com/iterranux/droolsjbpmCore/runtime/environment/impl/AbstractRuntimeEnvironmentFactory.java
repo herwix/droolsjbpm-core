@@ -33,11 +33,12 @@ import org.kie.internal.task.api.UserGroupCallback;
  */
 public abstract class AbstractRuntimeEnvironmentFactory {
 
-    private EntityManagerFactory entityManagerFactory;
+    protected EntityManagerFactory entityManagerFactory;
 
-    private UserGroupCallback userGroupCallback;
+    protected UserGroupCallback userGroupCallback;
 
-    private RegisterableItemsFactory registerableItemsFactory;
+    protected RegisterableItemsFactoryFactory registerableItemsFactoryFactory;
+
 
     /**
      * Simple RuntimeEnvironmentBuilder factory method that can be used to set up a custom RuntimeEnvironment
@@ -52,10 +53,6 @@ public abstract class AbstractRuntimeEnvironmentFactory {
                 .entityManagerFactory(entityManagerFactory)
                 .classLoader(Holders.getGrailsApplication().getClassLoader());
 
-        if (registerableItemsFactory != null){
-            builder.registerableItemsFactory(registerableItemsFactory);
-        }
-
         return builder;
     }
 
@@ -67,8 +64,7 @@ public abstract class AbstractRuntimeEnvironmentFactory {
         this.entityManagerFactory = entityManagerFactory;
     }
 
-    public void setRegisterableItemsFactory(RegisterableItemsFactory registerableItemsFactory) {
-        this.registerableItemsFactory = registerableItemsFactory;
+    public void setRegisterableItemsFactoryFactory(RegisterableItemsFactoryFactory registerableItemsFactoryFactory) {
+        this.registerableItemsFactoryFactory = registerableItemsFactoryFactory;
     }
-
 }
