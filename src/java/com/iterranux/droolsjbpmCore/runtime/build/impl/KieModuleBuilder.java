@@ -103,7 +103,7 @@ public class KieModuleBuilder {
             for(org.springframework.core.io.Resource moduleResource : moduleResources){
                 URL moduleResourceURL = moduleResource.getURL();
 
-                if (! isTestResource(moduleResourceURL)){
+                if (! isTestResource(moduleResourceURL) && !isFolder(moduleResourceURL) ){
 
                     if(log.isDebugEnabled())
                         log.debug("Resources found for '"+moduleName+"': "+moduleResourceURL);
@@ -175,12 +175,21 @@ public class KieModuleBuilder {
      * WARNING: This also excludes non test files if there path somehow contains '/target/test-classes/' which is unlikely.
      *
      * @param resourceURL
-     * @return
+     * @return Boolean
      */
     protected Boolean isTestResource(URL resourceURL){
         return resourceURL.toString().contains("/target/test-classes/");
     }
 
+    /**
+     * Simple Method to check if resource is folder. (Checks if last char of URL is /)
+     *
+     * @param resourceURL
+     * @return Boolean
+     */
+    protected Boolean isFolder(URL resourceURL){
+        return resourceURL.toString().endsWith("/");
+    }
     /**
      * Trims the URL to the moduleName.
      * Expected URL format: abc/xyz/droolsjbpm/moduleName/kmodule.xml
