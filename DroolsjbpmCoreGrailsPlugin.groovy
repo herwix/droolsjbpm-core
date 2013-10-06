@@ -37,7 +37,7 @@ class DroolsjbpmCoreGrailsPlugin {
     private Logger log = LoggerFactory.getLogger('com.iterranux.droolsjbpmCore.DroolsjbpmCoreGrailsPlugin')
 
     // the plugin version
-    def version = "1.0.RC1"
+    def version = "1.0.RC4"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.0 > *"
     // resources that are excluded from plugin packaging
