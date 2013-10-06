@@ -24,6 +24,7 @@ import org.kie.api.runtime.manager.RuntimeManager
 import org.kie.api.runtime.process.ProcessInstance
 import org.kie.api.task.TaskService
 import org.kie.api.task.model.TaskSummary
+import org.kie.internal.runtime.manager.RuntimeEnvironment
 
 import static org.junit.Assert.*
 
@@ -36,7 +37,8 @@ class TaskIntegrationTests extends GroovyTestCase{
     def droolsjbpmCoreUtils
 
     protected RuntimeManager createRuntimeManager(){
-        def runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment(droolsjbpmCoreUtils.getReleaseIdForGrailsModule('droolsjbpmCore'))
+        RuntimeEnvironment runtimeEnvironment = droolsjbpmKmoduleRuntimeEnvironmentFactory.newRuntimeEnvironment(droolsjbpmCoreUtils.getReleaseIdForGrailsModule('droolsjbpmCore'))
+
         return  droolsjbpmRuntimeManagerFactory.newRuntimeManager(SingletonRuntimeManagerFactory.RUNTIME_MANAGER_TYPE,runtimeEnvironment,"test")
     }
 

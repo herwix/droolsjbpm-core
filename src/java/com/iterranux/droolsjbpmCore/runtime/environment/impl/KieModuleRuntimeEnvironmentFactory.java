@@ -17,11 +17,14 @@
 
 package com.iterranux.droolsjbpmCore.runtime.environment.impl;
 
+import org.jbpm.process.audit.event.AuditEventBuilder;
+import org.jbpm.runtime.manager.impl.KModuleRegisterableItemsFactory;
 import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.ReleaseId;
 import org.kie.api.runtime.KieContainer;
+import org.kie.internal.runtime.manager.RegisterableItemsFactory;
 import org.kie.internal.runtime.manager.RuntimeEnvironment;
 
 /**
@@ -32,44 +35,142 @@ public class KieModuleRuntimeEnvironmentFactory extends AbstractRuntimeEnvironme
 
     KieServices kieServices;
 
-    public RuntimeEnvironment newRuntimeEnvironment(String groupId, String artifactId, String version){
+    private AuditEventBuilder auditEventBuilder;
 
-        return newRuntimeEnvironment(groupId, artifactId, version, null);
-    }
-
-    public RuntimeEnvironment newRuntimeEnvironment(String groupId, String artifactId, String version, String kbaseName){
-
-        ReleaseId releaseId = kieServices.newReleaseId(groupId,artifactId,version);
-
-        return newRuntimeEnvironment(releaseId, kbaseName);
-    }
-
-    public RuntimeEnvironment newRuntimeEnvironment(ReleaseId releaseId){
-
-        return newRuntimeEnvironment(releaseId, null);
-    }
-
-    public RuntimeEnvironment newRuntimeEnvironment(ReleaseId releaseId, String kbaseName){
+    /**
+     * Add the kieBase identified by releaseId and kieBaseName to the RuntimeEnvironmentBuilder.
+     *
+     * @param releaseId of the kieModule the kieBase is in
+     * @param kieBaseName of the desired kieBase - use null for default
+     * @param kieSessionName of the desired KieSession - use null for default
+     * @return RuntimeEnvironmentBuilder with configured KieBase
+     */
+    public RuntimeEnvironmentBuilder newRuntimeEnvironmentBuilder(ReleaseId releaseId, String kieBaseName, String kieSessionName){
 
         KieContainer kieContainer = kieServices.newKieContainer(releaseId);
         KieBase kieBase;
 
         //Retrieve kbase by name (if null or empty use default)
-        if( kbaseName == null || kbaseName == ""){
+        if( kieBaseName == null || kieBaseName.equals("")){
             kieBase = kieContainer.getKieBase();
         }else{
-            kieBase = kieContainer.getKieBase(kbaseName);
+            kieBase = kieContainer.getKieBase(kieBaseName);
         }
 
         RuntimeEnvironmentBuilder builder = newDefaultRuntimeEnvironmentBuilder();
 
         builder.knowledgeBase(kieBase);
 
+        //Add KModuleRegisterableItemsFactory to register Listeners, WorkItemHandlers registered in kmodule.xml
+        RegisterableItemsFactory registerableItemsFactory;
+
+        if(auditEventBuilder == null){
+            registerableItemsFactory = new KModuleRegisterableItemsFactory(kieContainer,kieSessionName);
+        }else{
+            registerableItemsFactory = new KModuleRegisterableItemsFactory(kieContainer,kieSessionName,auditEventBuilder);
+        }
+        builder.registerableItemsFactory(registerableItemsFactory);
+
+        return builder;
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironment for params.
+     * @param groupId of kieModule
+     * @param artifactId of kieModule
+     * @param version of kieModule
+     * @return runtimeEnvironment for default kieBase of kieModule
+     */
+    public RuntimeEnvironment newRuntimeEnvironment(String groupId, String artifactId, String version){
+
+        return newRuntimeEnvironment(groupId, artifactId, version, null, null);
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironment for params.
+     * @param groupId of kieModule
+     * @param artifactId of kieModule
+     * @param version of kieModule
+     * @param kieBaseName of of the desired kieBase - use null for default
+     * @param kieSessionName of the desired KieSession - use null for default
+     * @return runtimeEnvironment for kieBase with kieBaseName of kieModule
+     */
+    public RuntimeEnvironment newRuntimeEnvironment(String groupId, String artifactId, String version, String kieBaseName, String kieSessionName){
+
+        ReleaseId releaseId = kieServices.newReleaseId(groupId,artifactId,version);
+
+        return newRuntimeEnvironment(releaseId, kieBaseName, kieSessionName);
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironment for params.
+     * @param releaseId of kieModule
+     * @return runtimeEnvironment for default kieBase of kieModule
+     */
+    public RuntimeEnvironment newRuntimeEnvironment(ReleaseId releaseId){
+
+        return newRuntimeEnvironment(releaseId, null, null);
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironment for params.
+     * @param releaseId of kieModule
+     * @param kieBaseName of the desired kieBase - use null for default
+     * @param kieSessionName of the desired KieSession - use null for default
+     * @return runtimeEnvironment for kieBase with kieBaseName of kieModule
+     */
+    public RuntimeEnvironment newRuntimeEnvironment(ReleaseId releaseId, String kieBaseName, String kieSessionName){
+
+        RuntimeEnvironmentBuilder builder = newRuntimeEnvironmentBuilder(releaseId, kieBaseName, kieSessionName);
+
         return builder.get();
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironmentBuilder with the kieBase added.
+     * @param groupId of kieModule
+     * @param artifactId of kieModule
+     * @param version of kieModule
+     * @return runtimeEnvironmentBuilder with default kieBase from kieModule
+     */
+    public RuntimeEnvironmentBuilder newRuntimeEnvironmentBuilder(String groupId, String artifactId, String version){
+
+        return newRuntimeEnvironmentBuilder(groupId, artifactId, version, null, null);
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironmentBuilder with the kieBase added.
+     * @param groupId of kieModule
+     * @param artifactId of kieModule
+     * @param version of kieModule
+     * @param kieBaseName of the desired kieBase - use null for default
+     * @param kieSessionName of the desired KieSession - use null for default
+     * @return runtimeEnvironmentBuilder with kieBase from kieBaseName of kieModule
+     */
+    public RuntimeEnvironmentBuilder newRuntimeEnvironmentBuilder(String groupId, String artifactId, String version, String kieBaseName, String kieSessionName){
+
+        ReleaseId releaseId = kieServices.newReleaseId(groupId,artifactId,version);
+
+        return newRuntimeEnvironmentBuilder(releaseId, kieBaseName, kieSessionName);
+    }
+
+    /**
+     * Convenience method to get runtimeEnvironmentBuilder with the kieBase added.
+     * @param releaseId of kieModule
+     * @return runtimeEnvironmentBuilder with default kieBase from kieModule
+     */
+    public RuntimeEnvironmentBuilder newRuntimeEnvironmentBuilder(ReleaseId releaseId){
+
+        return newRuntimeEnvironmentBuilder(releaseId, null, null);
     }
 
     public void setKieServices(KieServices kieServices) {
         this.kieServices = kieServices;
+    }
+
+
+    public void setAuditEventBuilder(AuditEventBuilder auditEventBuilder) {
+        this.auditEventBuilder = auditEventBuilder;
     }
 
 }

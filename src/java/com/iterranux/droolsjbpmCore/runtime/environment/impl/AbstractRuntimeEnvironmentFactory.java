@@ -20,6 +20,8 @@ package com.iterranux.droolsjbpmCore.runtime.environment.impl;
 
 import javax.persistence.EntityManagerFactory;
 
+import grails.util.Holders;
+import org.jbpm.process.audit.event.AuditEventBuilder;
 import org.jbpm.runtime.manager.impl.RuntimeEnvironmentBuilder;
 import org.kie.internal.runtime.manager.RegisterableItemsFactory;
 import org.kie.internal.task.api.UserGroupCallback;
@@ -39,7 +41,7 @@ public abstract class AbstractRuntimeEnvironmentFactory {
 
     /**
      * Simple RuntimeEnvironmentBuilder factory method that can be used to set up a custom RuntimeEnvironment
-     * via the builder methods. UserGroupCallback and EntityManagerFactory are already configured.
+     * via the builder methods. UserGroupCallback, EntityManagerFactory, Classloader are already configured.
      *
      * @return RuntimeEnvironmentBuilder
      */
@@ -47,7 +49,8 @@ public abstract class AbstractRuntimeEnvironmentFactory {
 
         RuntimeEnvironmentBuilder builder = RuntimeEnvironmentBuilder.getDefault()
                 .userGroupCallback(userGroupCallback)
-                .entityManagerFactory(entityManagerFactory);
+                .entityManagerFactory(entityManagerFactory)
+                .classLoader(Holders.getGrailsApplication().getClassLoader());
 
         if (registerableItemsFactory != null){
             builder.registerableItemsFactory(registerableItemsFactory);
